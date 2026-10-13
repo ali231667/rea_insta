@@ -1,34 +1,55 @@
 {
   "name": "indrive-clone-backend",
   "version": "1.0.0",
-  "description": "Backend for the InDrive clone (student project): REST API + Socket.IO realtime + PostgreSQL",
+  "private": true,
+  "description": "InDrive clone backend: REST API + Socket.IO realtime + PostgreSQL/PostGIS + Redis",
   "type": "module",
-  "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "migrate": "node src/db/migrate.js",
-    "simulate": "node scripts/simulate-drivers.js",
-    "test": "node --test test/"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "simulate": "tsx scripts/simulate-drivers.ts",
+    "test": "vitest run"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "license": "MIT",
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
+    "bullmq": "^6.3.14",
     "cors": "^2.8.6",
-    "dotenv": "^16.6.1",
+    "dotenv": "^18.0.7",
+    "drizzle-orm": "^0.45.4",
     "express": "^5.3.0",
-    "express-rate-limit": "^7.5.1",
+    "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.12.1",
     "multer": "^2.4.0",
     "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
     "socket.io": "^4.8.4",
-    "zod": "^3.25.76"
+    "socket.io-client": "^4.8.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.4"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "drizzle-kit": "^0.31.11",
+    "pino-pretty": "^13.2.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
   }
 }
