@@ -1,0 +1,50 @@
+# Render Blueprint: Render -> New -> Blueprint -> choose this repo -> Apply.
+# Creates the API server, PostgreSQL (with PostGIS) and Redis on the free plan.
+services:
+  - type: web
+    name: indrive-clone-api
+    runtime: docker
+    plan: free
+    rootDir: indrive_clone/backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: indrive-clone-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: indrive-clone-redis
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: ADMIN_KEY
+        generateValue: true
+      # Demo settings: login code is shown in the app, drivers are approved at once.
+      - key: DEV_OTP
+        value: "true"
+      - key: AUTO_APPROVE_DRIVERS
+        value: "true"
+      # Fake drivers that send offers (set SIM_LAT / SIM_LNG to your location, or SIM_CITY)
+      - key: SIM_DRIVERS
+        value: "8"
+      - key: SIM_CITY
+        value: lahore
+
+  - type: keyvalue
+    name: indrive-clone-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+databases:
+  - name: indrive-clone-db
+    plan: free
+    databaseName: indrive

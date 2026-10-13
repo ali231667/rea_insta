@@ -11,7 +11,8 @@ const bool = (def: 'true' | 'false') =>
 const schema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PUBLIC_URL: z.string().default('http://localhost:4000'),
+  // On Render this is filled automatically from RENDER_EXTERNAL_URL.
+  PUBLIC_URL: z.string().default(process.env.RENDER_EXTERNAL_URL ?? 'http://localhost:4000'),
 
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/indrive'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
