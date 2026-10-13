@@ -4,6 +4,7 @@ import '../data/auth_repository.dart';
 import '../data/driver_repository.dart';
 import '../data/maps_repository.dart';
 import '../data/ride_repository.dart';
+import '../data/support_repository.dart';
 import '../data/user_repository.dart';
 import '../features/auth/session_controller.dart';
 import 'location/location_service.dart';
@@ -36,3 +37,4 @@ final userRepositoryProvider = Provider((ref) => UserRepository(ref.watch(apiCli
 final rideRepositoryProvider = Provider((ref) => RideRepository(ref.watch(apiClientProvider)));
 final driverRepositoryProvider = Provider((ref) => DriverRepository(ref.watch(apiClientProvider)));
 final mapsRepositoryProvider = Provider((ref) => MapsRepository(ref.watch(apiClientProvider)));
+final supportRepositoryProvider = Provider((ref) => SupportRepository(ref.watch(apiClientProvider)));

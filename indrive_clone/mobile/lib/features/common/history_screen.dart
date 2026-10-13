@@ -143,6 +143,18 @@ class RideDetailsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             if (r.driver != null) DriverCard(driver: r.driver!),
             if (r.driverStars != null) _row('Your rating for driver', '★' * r.driverStars!),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.backpack_outlined),
+              label: Text(tr('I lost an item')),
+              onPressed: () => context.push('/support/new?rideId=${r.id}&category=lost_item'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.report_outlined),
+              label: Text(tr('Report a problem')),
+              onPressed: () => context.push('/support/new?rideId=${r.id}&category=fare_issue'),
+            ),
           ]);
         },
       ),

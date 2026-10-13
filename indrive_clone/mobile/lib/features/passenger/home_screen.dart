@@ -37,6 +37,10 @@ class _PassengerHomeScreenState extends ConsumerState<PassengerHomeScreen> {
   List<NearbyCar> _cars = [];
   int? _nearestEta;
   bool _dragging = false;
+  final _panelKey = GlobalKey();
+
+  /// Height of the bottom panel, so the route is not hidden behind it.
+  double get _panelHeight => _panelKey.currentContext?.size?.height ?? 420;
 
   @override
   void initState() {
@@ -114,13 +118,15 @@ class _PassengerHomeScreenState extends ConsumerState<PassengerHomeScreen> {
     } catch (e) {
       if (mounted) showError(context, e);
     }
-    _fitRoute();
   }
 
   void _fitRoute() {
     final s = ref.read(passengerProvider);
     final pts = [?s.pickup?.latLng, ?s.dropoff?.latLng];
-    fitPoints(_map, pts, padding: const EdgeInsets.fromLTRB(60, 120, 60, 420));
+    // Wait one frame so the panel has its new height (vehicles + price appear).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) fitPoints(_map, pts, padding: EdgeInsets.fromLTRB(50, 100, 50, _panelHeight + 30));
+    });
   }
 
   Future<void> _order() async {
@@ -139,6 +145,10 @@ class _PassengerHomeScreenState extends ConsumerState<PassengerHomeScreen> {
     final s = ref.watch(passengerProvider);
     final route = decodePolyline(s.estimate?.routePolyline);
     final hasRoute = s.dropoff != null;
+    // New route (from search, Home/Work chip or "order again"): show all of it.
+    ref.listen(passengerProvider.select((x) => x.estimate?.routePolyline), (_, next) {
+      if (next != null) _fitRoute();
+    });
 
     return Scaffold(
       key: _scaffold,
@@ -161,21 +171,30 @@ class _PassengerHomeScreenState extends ConsumerState<PassengerHomeScreen> {
           ),
         ),
         // Center pin for choosing pickup by moving the map.
+        // The tip of the pin is exactly at the map center, which is the pickup point.
         if (!hasRoute)
-          IgnorePointer(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 300),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  if (_nearestEta != null && !_dragging)
-                    Pill(durationText(_nearestEta), color: AppColors.black, textColor: Colors.white),
-                  AnimatedSlide(
-                    duration: const Duration(milliseconds: 150),
-                    offset: Offset(0, _dragging ? -0.2 : 0),
-                    child: const Icon(Icons.location_on, size: 48, color: AppColors.black),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: LayoutBuilder(builder: (context, c) {
+                const pinSize = 48.0;
+                return Stack(children: [
+                  Positioned(
+                    left: c.maxWidth / 2 - 60,
+                    width: 120,
+                    top: c.maxHeight / 2 - pinSize - 30,
+                    height: pinSize + 30,
+                    child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                      if (_nearestEta != null && !_dragging)
+                        Pill(durationText(_nearestEta), color: AppColors.black, textColor: Colors.white),
+                      AnimatedSlide(
+                        duration: const Duration(milliseconds: 150),
+                        offset: Offset(0, _dragging ? -0.2 : 0),
+                        child: const Icon(Icons.location_on, size: pinSize, color: AppColors.black),
+                      ),
+                    ]),
                   ),
-                ]),
-              ),
+                ]);
+              }),
             ),
           ),
         SafeArea(
@@ -191,7 +210,10 @@ class _PassengerHomeScreenState extends ConsumerState<PassengerHomeScreen> {
             ]),
           ),
         ),
-        Align(alignment: Alignment.bottomCenter, child: _BottomPanel(onSearch: _openSearch, onOrder: _order)),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: KeyedSubtree(key: _panelKey, child: _BottomPanel(onSearch: _openSearch, onOrder: _order)),
+        ),
       ]),
     );
   }

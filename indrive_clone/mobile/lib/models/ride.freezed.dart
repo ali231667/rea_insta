@@ -907,7 +907,9 @@ $PublicDriverCopyWith<$Res>? get driver {
 /// @nodoc
 mixin _$Ride {
 
- String get id; String get status; String get serviceType; String get vehicleType; RidePoint get pickup; RidePoint get dropoff; int get distanceM; int get durationS; String? get routePolyline; int get recommendedFare; int get minFare; int get offeredFare; int? get finalFare; String get paymentMethod; String? get comment; RideDetails get details; int get searchRadiusM; DateTime get expiresAt; DateTime get createdAt; DateTime? get acceptedAt; DateTime? get arrivedAt; DateTime? get startedAt; DateTime? get completedAt; DateTime? get cancelledAt; String? get cancelledBy; String? get cancelReason; int? get driverStars; int? get passengerStars; int? get commission; PublicUser? get passenger; PublicDriver? get driver; List<Offer> get offers;
+ String get id; String get status; String get serviceType; String get vehicleType; RidePoint get pickup; RidePoint get dropoff; int get distanceM; int get durationS; String? get routePolyline; int get recommendedFare; int get minFare; int get offeredFare; int? get finalFare; String get paymentMethod; String? get comment; RideDetails get details; int get searchRadiusM; DateTime get expiresAt; DateTime get createdAt; DateTime? get acceptedAt; DateTime? get arrivedAt; DateTime? get startedAt; DateTime? get completedAt; DateTime? get cancelledAt; String? get cancelledBy; String? get cancelReason; int? get driverStars; int? get passengerStars; int? get commission; PublicUser? get passenger; PublicDriver? get driver; List<Offer> get offers;/// While searching: how many drivers got this request.
+ int get driversNotified;/// Last known car position (assigned rides), so the map is not empty after reopening the app.
+ LiveLocation? get driverLocation;
 /// Create a copy of Ride
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -921,20 +923,20 @@ $RideCopyWith<Ride> get copyWith => _$RideCopyWithImpl<Ride>(this as Ride, _$ide
 @override
 bool operator ==(Object other) {
   final _this = this as Ride;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ride&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.serviceType, _this.serviceType) || other.serviceType == _this.serviceType)&&(identical(other.vehicleType, _this.vehicleType) || other.vehicleType == _this.vehicleType)&&(identical(other.pickup, _this.pickup) || other.pickup == _this.pickup)&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.durationS, _this.durationS) || other.durationS == _this.durationS)&&(identical(other.routePolyline, _this.routePolyline) || other.routePolyline == _this.routePolyline)&&(identical(other.recommendedFare, _this.recommendedFare) || other.recommendedFare == _this.recommendedFare)&&(identical(other.minFare, _this.minFare) || other.minFare == _this.minFare)&&(identical(other.offeredFare, _this.offeredFare) || other.offeredFare == _this.offeredFare)&&(identical(other.finalFare, _this.finalFare) || other.finalFare == _this.finalFare)&&(identical(other.paymentMethod, _this.paymentMethod) || other.paymentMethod == _this.paymentMethod)&&(identical(other.comment, _this.comment) || other.comment == _this.comment)&&(identical(other.details, _this.details) || other.details == _this.details)&&(identical(other.searchRadiusM, _this.searchRadiusM) || other.searchRadiusM == _this.searchRadiusM)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.arrivedAt, _this.arrivedAt) || other.arrivedAt == _this.arrivedAt)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.cancelledAt, _this.cancelledAt) || other.cancelledAt == _this.cancelledAt)&&(identical(other.cancelledBy, _this.cancelledBy) || other.cancelledBy == _this.cancelledBy)&&(identical(other.cancelReason, _this.cancelReason) || other.cancelReason == _this.cancelReason)&&(identical(other.driverStars, _this.driverStars) || other.driverStars == _this.driverStars)&&(identical(other.passengerStars, _this.passengerStars) || other.passengerStars == _this.passengerStars)&&(identical(other.commission, _this.commission) || other.commission == _this.commission)&&(identical(other.passenger, _this.passenger) || other.passenger == _this.passenger)&&(identical(other.driver, _this.driver) || other.driver == _this.driver)&&const DeepCollectionEquality().equals(other.offers, _this.offers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ride&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.serviceType, _this.serviceType) || other.serviceType == _this.serviceType)&&(identical(other.vehicleType, _this.vehicleType) || other.vehicleType == _this.vehicleType)&&(identical(other.pickup, _this.pickup) || other.pickup == _this.pickup)&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.durationS, _this.durationS) || other.durationS == _this.durationS)&&(identical(other.routePolyline, _this.routePolyline) || other.routePolyline == _this.routePolyline)&&(identical(other.recommendedFare, _this.recommendedFare) || other.recommendedFare == _this.recommendedFare)&&(identical(other.minFare, _this.minFare) || other.minFare == _this.minFare)&&(identical(other.offeredFare, _this.offeredFare) || other.offeredFare == _this.offeredFare)&&(identical(other.finalFare, _this.finalFare) || other.finalFare == _this.finalFare)&&(identical(other.paymentMethod, _this.paymentMethod) || other.paymentMethod == _this.paymentMethod)&&(identical(other.comment, _this.comment) || other.comment == _this.comment)&&(identical(other.details, _this.details) || other.details == _this.details)&&(identical(other.searchRadiusM, _this.searchRadiusM) || other.searchRadiusM == _this.searchRadiusM)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.arrivedAt, _this.arrivedAt) || other.arrivedAt == _this.arrivedAt)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.cancelledAt, _this.cancelledAt) || other.cancelledAt == _this.cancelledAt)&&(identical(other.cancelledBy, _this.cancelledBy) || other.cancelledBy == _this.cancelledBy)&&(identical(other.cancelReason, _this.cancelReason) || other.cancelReason == _this.cancelReason)&&(identical(other.driverStars, _this.driverStars) || other.driverStars == _this.driverStars)&&(identical(other.passengerStars, _this.passengerStars) || other.passengerStars == _this.passengerStars)&&(identical(other.commission, _this.commission) || other.commission == _this.commission)&&(identical(other.passenger, _this.passenger) || other.passenger == _this.passenger)&&(identical(other.driver, _this.driver) || other.driver == _this.driver)&&const DeepCollectionEquality().equals(other.offers, _this.offers)&&(identical(other.driversNotified, _this.driversNotified) || other.driversNotified == _this.driversNotified)&&(identical(other.driverLocation, _this.driverLocation) || other.driverLocation == _this.driverLocation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Ride;
-  return Object.hashAll([runtimeType,_this.id,_this.status,_this.serviceType,_this.vehicleType,_this.pickup,_this.dropoff,_this.distanceM,_this.durationS,_this.routePolyline,_this.recommendedFare,_this.minFare,_this.offeredFare,_this.finalFare,_this.paymentMethod,_this.comment,_this.details,_this.searchRadiusM,_this.expiresAt,_this.createdAt,_this.acceptedAt,_this.arrivedAt,_this.startedAt,_this.completedAt,_this.cancelledAt,_this.cancelledBy,_this.cancelReason,_this.driverStars,_this.passengerStars,_this.commission,_this.passenger,_this.driver,const DeepCollectionEquality().hash(_this.offers)]);
+  return Object.hashAll([runtimeType,_this.id,_this.status,_this.serviceType,_this.vehicleType,_this.pickup,_this.dropoff,_this.distanceM,_this.durationS,_this.routePolyline,_this.recommendedFare,_this.minFare,_this.offeredFare,_this.finalFare,_this.paymentMethod,_this.comment,_this.details,_this.searchRadiusM,_this.expiresAt,_this.createdAt,_this.acceptedAt,_this.arrivedAt,_this.startedAt,_this.completedAt,_this.cancelledAt,_this.cancelledBy,_this.cancelReason,_this.driverStars,_this.passengerStars,_this.commission,_this.passenger,_this.driver,const DeepCollectionEquality().hash(_this.offers),_this.driversNotified,_this.driverLocation]);
 }
 
 @override
 String toString() {
   final _this = this as Ride;
-  return 'Ride(id: ${_this.id}, status: ${_this.status}, serviceType: ${_this.serviceType}, vehicleType: ${_this.vehicleType}, pickup: ${_this.pickup}, dropoff: ${_this.dropoff}, distanceM: ${_this.distanceM}, durationS: ${_this.durationS}, routePolyline: ${_this.routePolyline}, recommendedFare: ${_this.recommendedFare}, minFare: ${_this.minFare}, offeredFare: ${_this.offeredFare}, finalFare: ${_this.finalFare}, paymentMethod: ${_this.paymentMethod}, comment: ${_this.comment}, details: ${_this.details}, searchRadiusM: ${_this.searchRadiusM}, expiresAt: ${_this.expiresAt}, createdAt: ${_this.createdAt}, acceptedAt: ${_this.acceptedAt}, arrivedAt: ${_this.arrivedAt}, startedAt: ${_this.startedAt}, completedAt: ${_this.completedAt}, cancelledAt: ${_this.cancelledAt}, cancelledBy: ${_this.cancelledBy}, cancelReason: ${_this.cancelReason}, driverStars: ${_this.driverStars}, passengerStars: ${_this.passengerStars}, commission: ${_this.commission}, passenger: ${_this.passenger}, driver: ${_this.driver}, offers: ${_this.offers})';
+  return 'Ride(id: ${_this.id}, status: ${_this.status}, serviceType: ${_this.serviceType}, vehicleType: ${_this.vehicleType}, pickup: ${_this.pickup}, dropoff: ${_this.dropoff}, distanceM: ${_this.distanceM}, durationS: ${_this.durationS}, routePolyline: ${_this.routePolyline}, recommendedFare: ${_this.recommendedFare}, minFare: ${_this.minFare}, offeredFare: ${_this.offeredFare}, finalFare: ${_this.finalFare}, paymentMethod: ${_this.paymentMethod}, comment: ${_this.comment}, details: ${_this.details}, searchRadiusM: ${_this.searchRadiusM}, expiresAt: ${_this.expiresAt}, createdAt: ${_this.createdAt}, acceptedAt: ${_this.acceptedAt}, arrivedAt: ${_this.arrivedAt}, startedAt: ${_this.startedAt}, completedAt: ${_this.completedAt}, cancelledAt: ${_this.cancelledAt}, cancelledBy: ${_this.cancelledBy}, cancelReason: ${_this.cancelReason}, driverStars: ${_this.driverStars}, passengerStars: ${_this.passengerStars}, commission: ${_this.commission}, passenger: ${_this.passenger}, driver: ${_this.driver}, offers: ${_this.offers}, driversNotified: ${_this.driversNotified}, driverLocation: ${_this.driverLocation})';
 }
 
 
@@ -945,11 +947,11 @@ abstract mixin class $RideCopyWith<$Res>  {
   factory $RideCopyWith(Ride value, $Res Function(Ride) _then) = _$RideCopyWithImpl;
 @useResult
 $Res call({
- String id, String status, String serviceType, String vehicleType, RidePoint pickup, RidePoint dropoff, int distanceM, int durationS, String? routePolyline, int recommendedFare, int minFare, int offeredFare, int? finalFare, String paymentMethod, String? comment, RideDetails details, int searchRadiusM, DateTime expiresAt, DateTime createdAt, DateTime? acceptedAt, DateTime? arrivedAt, DateTime? startedAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelledBy, String? cancelReason, int? driverStars, int? passengerStars, int? commission, PublicUser? passenger, PublicDriver? driver, List<Offer> offers
+ String id, String status, String serviceType, String vehicleType, RidePoint pickup, RidePoint dropoff, int distanceM, int durationS, String? routePolyline, int recommendedFare, int minFare, int offeredFare, int? finalFare, String paymentMethod, String? comment, RideDetails details, int searchRadiusM, DateTime expiresAt, DateTime createdAt, DateTime? acceptedAt, DateTime? arrivedAt, DateTime? startedAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelledBy, String? cancelReason, int? driverStars, int? passengerStars, int? commission, PublicUser? passenger, PublicDriver? driver, List<Offer> offers, int driversNotified, LiveLocation? driverLocation
 });
 
 
-$RidePointCopyWith<$Res> get pickup;$RidePointCopyWith<$Res> get dropoff;$RideDetailsCopyWith<$Res> get details;$PublicUserCopyWith<$Res>? get passenger;$PublicDriverCopyWith<$Res>? get driver;
+$RidePointCopyWith<$Res> get pickup;$RidePointCopyWith<$Res> get dropoff;$RideDetailsCopyWith<$Res> get details;$PublicUserCopyWith<$Res>? get passenger;$PublicDriverCopyWith<$Res>? get driver;$LiveLocationCopyWith<$Res>? get driverLocation;
 
 }
 /// @nodoc
@@ -962,7 +964,7 @@ class _$RideCopyWithImpl<$Res>
 
 /// Create a copy of Ride
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? serviceType = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? distanceM = null,Object? durationS = null,Object? routePolyline = freezed,Object? recommendedFare = null,Object? minFare = null,Object? offeredFare = null,Object? finalFare = freezed,Object? paymentMethod = null,Object? comment = freezed,Object? details = null,Object? searchRadiusM = null,Object? expiresAt = null,Object? createdAt = null,Object? acceptedAt = freezed,Object? arrivedAt = freezed,Object? startedAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelledBy = freezed,Object? cancelReason = freezed,Object? driverStars = freezed,Object? passengerStars = freezed,Object? commission = freezed,Object? passenger = freezed,Object? driver = freezed,Object? offers = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? serviceType = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? distanceM = null,Object? durationS = null,Object? routePolyline = freezed,Object? recommendedFare = null,Object? minFare = null,Object? offeredFare = null,Object? finalFare = freezed,Object? paymentMethod = null,Object? comment = freezed,Object? details = null,Object? searchRadiusM = null,Object? expiresAt = null,Object? createdAt = null,Object? acceptedAt = freezed,Object? arrivedAt = freezed,Object? startedAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelledBy = freezed,Object? cancelReason = freezed,Object? driverStars = freezed,Object? passengerStars = freezed,Object? commission = freezed,Object? passenger = freezed,Object? driver = freezed,Object? offers = null,Object? driversNotified = null,Object? driverLocation = freezed,}) {
   return _then(Ride(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -996,7 +998,9 @@ as int?,commission: freezed == commission ? _self.commission : commission // ign
 as int?,passenger: freezed == passenger ? _self.passenger : passenger // ignore: cast_nullable_to_non_nullable
 as PublicUser?,driver: freezed == driver ? _self.driver : driver // ignore: cast_nullable_to_non_nullable
 as PublicDriver?,offers: null == offers ? _self.offers : offers // ignore: cast_nullable_to_non_nullable
-as List<Offer>,
+as List<Offer>,driversNotified: null == driversNotified ? _self.driversNotified : driversNotified // ignore: cast_nullable_to_non_nullable
+as int,driverLocation: freezed == driverLocation ? _self.driverLocation : driverLocation // ignore: cast_nullable_to_non_nullable
+as LiveLocation?,
   ));
 }
 /// Create a copy of Ride
@@ -1049,6 +1053,18 @@ $PublicDriverCopyWith<$Res>? get driver {
 
   return $PublicDriverCopyWith<$Res>(_self.driver!, (value) {
     return _then(_self.copyWith(driver: value));
+  });
+}/// Create a copy of Ride
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LiveLocationCopyWith<$Res>? get driverLocation {
+    if (_self.driverLocation == null) {
+    return null;
+  }
+
+  return $LiveLocationCopyWith<$Res>(_self.driverLocation!, (value) {
+    return _then(_self.copyWith(driverLocation: value));
   });
 }
 }
@@ -1132,10 +1148,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers,  int driversNotified,  LiveLocation? driverLocation)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Ride() when $default != null:
-return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers);case _:
+return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers,_that.driversNotified,_that.driverLocation);case _:
   return orElse();
 
 }
@@ -1153,10 +1169,10 @@ return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers,  int driversNotified,  LiveLocation? driverLocation)  $default,) {final _that = this;
 switch (_that) {
 case _Ride():
-return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers);case _:
+return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers,_that.driversNotified,_that.driverLocation);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1173,10 +1189,10 @@ return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String status,  String serviceType,  String vehicleType,  RidePoint pickup,  RidePoint dropoff,  int distanceM,  int durationS,  String? routePolyline,  int recommendedFare,  int minFare,  int offeredFare,  int? finalFare,  String paymentMethod,  String? comment,  RideDetails details,  int searchRadiusM,  DateTime expiresAt,  DateTime createdAt,  DateTime? acceptedAt,  DateTime? arrivedAt,  DateTime? startedAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelledBy,  String? cancelReason,  int? driverStars,  int? passengerStars,  int? commission,  PublicUser? passenger,  PublicDriver? driver,  List<Offer> offers,  int driversNotified,  LiveLocation? driverLocation)?  $default,) {final _that = this;
 switch (_that) {
 case _Ride() when $default != null:
-return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers);case _:
+return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.pickup,_that.dropoff,_that.distanceM,_that.durationS,_that.routePolyline,_that.recommendedFare,_that.minFare,_that.offeredFare,_that.finalFare,_that.paymentMethod,_that.comment,_that.details,_that.searchRadiusM,_that.expiresAt,_that.createdAt,_that.acceptedAt,_that.arrivedAt,_that.startedAt,_that.completedAt,_that.cancelledAt,_that.cancelledBy,_that.cancelReason,_that.driverStars,_that.passengerStars,_that.commission,_that.passenger,_that.driver,_that.offers,_that.driversNotified,_that.driverLocation);case _:
   return null;
 
 }
@@ -1188,7 +1204,7 @@ return $default(_that.id,_that.status,_that.serviceType,_that.vehicleType,_that.
 @JsonSerializable()
 
 class _Ride extends Ride {
-  const _Ride({required this.id, required this.status, required this.serviceType, required this.vehicleType, required this.pickup, required this.dropoff, required this.distanceM, required this.durationS, this.routePolyline, required this.recommendedFare, required this.minFare, required this.offeredFare, this.finalFare, this.paymentMethod = 'cash', this.comment, this.details = const RideDetails(), this.searchRadiusM = 3000, required this.expiresAt, required this.createdAt, this.acceptedAt, this.arrivedAt, this.startedAt, this.completedAt, this.cancelledAt, this.cancelledBy, this.cancelReason, this.driverStars, this.passengerStars, this.commission, this.passenger, this.driver,  List<Offer> offers = const []}): _offers = offers,super._();
+  const _Ride({required this.id, required this.status, required this.serviceType, required this.vehicleType, required this.pickup, required this.dropoff, required this.distanceM, required this.durationS, this.routePolyline, required this.recommendedFare, required this.minFare, required this.offeredFare, this.finalFare, this.paymentMethod = 'cash', this.comment, this.details = const RideDetails(), this.searchRadiusM = 3000, required this.expiresAt, required this.createdAt, this.acceptedAt, this.arrivedAt, this.startedAt, this.completedAt, this.cancelledAt, this.cancelledBy, this.cancelReason, this.driverStars, this.passengerStars, this.commission, this.passenger, this.driver,  List<Offer> offers = const [], this.driversNotified = 0, this.driverLocation}): _offers = offers,super._();
   factory _Ride.fromJson(Map<String, dynamic> json) => _$RideFromJson(json);
 
 @override final  String id;
@@ -1229,6 +1245,10 @@ class _Ride extends Ride {
   return EqualUnmodifiableListView(_offers);
 }
 
+/// While searching: how many drivers got this request.
+@override@JsonKey() final  int driversNotified;
+/// Last known car position (assigned rides), so the map is not empty after reopening the app.
+@override final  LiveLocation? driverLocation;
 
 /// Create a copy of Ride
 /// with the given fields replaced by the non-null parameter values.
@@ -1243,18 +1263,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ride&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.serviceType, serviceType) || other.serviceType == serviceType)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.durationS, durationS) || other.durationS == durationS)&&(identical(other.routePolyline, routePolyline) || other.routePolyline == routePolyline)&&(identical(other.recommendedFare, recommendedFare) || other.recommendedFare == recommendedFare)&&(identical(other.minFare, minFare) || other.minFare == minFare)&&(identical(other.offeredFare, offeredFare) || other.offeredFare == offeredFare)&&(identical(other.finalFare, finalFare) || other.finalFare == finalFare)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.details, details) || other.details == details)&&(identical(other.searchRadiusM, searchRadiusM) || other.searchRadiusM == searchRadiusM)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.arrivedAt, arrivedAt) || other.arrivedAt == arrivedAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelledBy, cancelledBy) || other.cancelledBy == cancelledBy)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.driverStars, driverStars) || other.driverStars == driverStars)&&(identical(other.passengerStars, passengerStars) || other.passengerStars == passengerStars)&&(identical(other.commission, commission) || other.commission == commission)&&(identical(other.passenger, passenger) || other.passenger == passenger)&&(identical(other.driver, driver) || other.driver == driver)&&const DeepCollectionEquality().equals(other.offers, _offers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ride&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.serviceType, serviceType) || other.serviceType == serviceType)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.durationS, durationS) || other.durationS == durationS)&&(identical(other.routePolyline, routePolyline) || other.routePolyline == routePolyline)&&(identical(other.recommendedFare, recommendedFare) || other.recommendedFare == recommendedFare)&&(identical(other.minFare, minFare) || other.minFare == minFare)&&(identical(other.offeredFare, offeredFare) || other.offeredFare == offeredFare)&&(identical(other.finalFare, finalFare) || other.finalFare == finalFare)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.comment, comment) || other.comment == comment)&&(identical(other.details, details) || other.details == details)&&(identical(other.searchRadiusM, searchRadiusM) || other.searchRadiusM == searchRadiusM)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.arrivedAt, arrivedAt) || other.arrivedAt == arrivedAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelledBy, cancelledBy) || other.cancelledBy == cancelledBy)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.driverStars, driverStars) || other.driverStars == driverStars)&&(identical(other.passengerStars, passengerStars) || other.passengerStars == passengerStars)&&(identical(other.commission, commission) || other.commission == commission)&&(identical(other.passenger, passenger) || other.passenger == passenger)&&(identical(other.driver, driver) || other.driver == driver)&&const DeepCollectionEquality().equals(other.offers, _offers)&&(identical(other.driversNotified, driversNotified) || other.driversNotified == driversNotified)&&(identical(other.driverLocation, driverLocation) || other.driverLocation == driverLocation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,status,serviceType,vehicleType,pickup,dropoff,distanceM,durationS,routePolyline,recommendedFare,minFare,offeredFare,finalFare,paymentMethod,comment,details,searchRadiusM,expiresAt,createdAt,acceptedAt,arrivedAt,startedAt,completedAt,cancelledAt,cancelledBy,cancelReason,driverStars,passengerStars,commission,passenger,driver,const DeepCollectionEquality().hash(_offers)]);
+    return Object.hashAll([runtimeType,id,status,serviceType,vehicleType,pickup,dropoff,distanceM,durationS,routePolyline,recommendedFare,minFare,offeredFare,finalFare,paymentMethod,comment,details,searchRadiusM,expiresAt,createdAt,acceptedAt,arrivedAt,startedAt,completedAt,cancelledAt,cancelledBy,cancelReason,driverStars,passengerStars,commission,passenger,driver,const DeepCollectionEquality().hash(_offers),driversNotified,driverLocation]);
 }
 
 @override
 String toString() {
-    return 'Ride(id: $id, status: $status, serviceType: $serviceType, vehicleType: $vehicleType, pickup: $pickup, dropoff: $dropoff, distanceM: $distanceM, durationS: $durationS, routePolyline: $routePolyline, recommendedFare: $recommendedFare, minFare: $minFare, offeredFare: $offeredFare, finalFare: $finalFare, paymentMethod: $paymentMethod, comment: $comment, details: $details, searchRadiusM: $searchRadiusM, expiresAt: $expiresAt, createdAt: $createdAt, acceptedAt: $acceptedAt, arrivedAt: $arrivedAt, startedAt: $startedAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelledBy: $cancelledBy, cancelReason: $cancelReason, driverStars: $driverStars, passengerStars: $passengerStars, commission: $commission, passenger: $passenger, driver: $driver, offers: $offers)';
+    return 'Ride(id: $id, status: $status, serviceType: $serviceType, vehicleType: $vehicleType, pickup: $pickup, dropoff: $dropoff, distanceM: $distanceM, durationS: $durationS, routePolyline: $routePolyline, recommendedFare: $recommendedFare, minFare: $minFare, offeredFare: $offeredFare, finalFare: $finalFare, paymentMethod: $paymentMethod, comment: $comment, details: $details, searchRadiusM: $searchRadiusM, expiresAt: $expiresAt, createdAt: $createdAt, acceptedAt: $acceptedAt, arrivedAt: $arrivedAt, startedAt: $startedAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelledBy: $cancelledBy, cancelReason: $cancelReason, driverStars: $driverStars, passengerStars: $passengerStars, commission: $commission, passenger: $passenger, driver: $driver, offers: $offers, driversNotified: $driversNotified, driverLocation: $driverLocation)';
 }
 
 
@@ -1265,11 +1285,11 @@ abstract mixin class _$RideCopyWith<$Res> implements $RideCopyWith<$Res> {
   factory _$RideCopyWith(_Ride value, $Res Function(_Ride) _then) = __$RideCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String status, String serviceType, String vehicleType, RidePoint pickup, RidePoint dropoff, int distanceM, int durationS, String? routePolyline, int recommendedFare, int minFare, int offeredFare, int? finalFare, String paymentMethod, String? comment, RideDetails details, int searchRadiusM, DateTime expiresAt, DateTime createdAt, DateTime? acceptedAt, DateTime? arrivedAt, DateTime? startedAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelledBy, String? cancelReason, int? driverStars, int? passengerStars, int? commission, PublicUser? passenger, PublicDriver? driver, List<Offer> offers
+ String id, String status, String serviceType, String vehicleType, RidePoint pickup, RidePoint dropoff, int distanceM, int durationS, String? routePolyline, int recommendedFare, int minFare, int offeredFare, int? finalFare, String paymentMethod, String? comment, RideDetails details, int searchRadiusM, DateTime expiresAt, DateTime createdAt, DateTime? acceptedAt, DateTime? arrivedAt, DateTime? startedAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelledBy, String? cancelReason, int? driverStars, int? passengerStars, int? commission, PublicUser? passenger, PublicDriver? driver, List<Offer> offers, int driversNotified, LiveLocation? driverLocation
 });
 
 
-@override $RidePointCopyWith<$Res> get pickup;@override $RidePointCopyWith<$Res> get dropoff;@override $RideDetailsCopyWith<$Res> get details;@override $PublicUserCopyWith<$Res>? get passenger;@override $PublicDriverCopyWith<$Res>? get driver;
+@override $RidePointCopyWith<$Res> get pickup;@override $RidePointCopyWith<$Res> get dropoff;@override $RideDetailsCopyWith<$Res> get details;@override $PublicUserCopyWith<$Res>? get passenger;@override $PublicDriverCopyWith<$Res>? get driver;@override $LiveLocationCopyWith<$Res>? get driverLocation;
 
 }
 /// @nodoc
@@ -1282,7 +1302,7 @@ class __$RideCopyWithImpl<$Res>
 
 /// Create a copy of Ride
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? serviceType = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? distanceM = null,Object? durationS = null,Object? routePolyline = freezed,Object? recommendedFare = null,Object? minFare = null,Object? offeredFare = null,Object? finalFare = freezed,Object? paymentMethod = null,Object? comment = freezed,Object? details = null,Object? searchRadiusM = null,Object? expiresAt = null,Object? createdAt = null,Object? acceptedAt = freezed,Object? arrivedAt = freezed,Object? startedAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelledBy = freezed,Object? cancelReason = freezed,Object? driverStars = freezed,Object? passengerStars = freezed,Object? commission = freezed,Object? passenger = freezed,Object? driver = freezed,Object? offers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? serviceType = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? distanceM = null,Object? durationS = null,Object? routePolyline = freezed,Object? recommendedFare = null,Object? minFare = null,Object? offeredFare = null,Object? finalFare = freezed,Object? paymentMethod = null,Object? comment = freezed,Object? details = null,Object? searchRadiusM = null,Object? expiresAt = null,Object? createdAt = null,Object? acceptedAt = freezed,Object? arrivedAt = freezed,Object? startedAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelledBy = freezed,Object? cancelReason = freezed,Object? driverStars = freezed,Object? passengerStars = freezed,Object? commission = freezed,Object? passenger = freezed,Object? driver = freezed,Object? offers = null,Object? driversNotified = null,Object? driverLocation = freezed,}) {
   return _then(_Ride(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -1316,7 +1336,9 @@ as int?,commission: freezed == commission ? _self.commission : commission // ign
 as int?,passenger: freezed == passenger ? _self.passenger : passenger // ignore: cast_nullable_to_non_nullable
 as PublicUser?,driver: freezed == driver ? _self.driver : driver // ignore: cast_nullable_to_non_nullable
 as PublicDriver?,offers: null == offers ? _self._offers : offers // ignore: cast_nullable_to_non_nullable
-as List<Offer>,
+as List<Offer>,driversNotified: null == driversNotified ? _self.driversNotified : driversNotified // ignore: cast_nullable_to_non_nullable
+as int,driverLocation: freezed == driverLocation ? _self.driverLocation : driverLocation // ignore: cast_nullable_to_non_nullable
+as LiveLocation?,
   ));
 }
 
@@ -1370,6 +1392,18 @@ $PublicDriverCopyWith<$Res>? get driver {
 
   return $PublicDriverCopyWith<$Res>(_self.driver!, (value) {
     return _then(_self.copyWith(driver: value));
+  });
+}/// Create a copy of Ride
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LiveLocationCopyWith<$Res>? get driverLocation {
+    if (_self.driverLocation == null) {
+    return null;
+  }
+
+  return $LiveLocationCopyWith<$Res>(_self.driverLocation!, (value) {
+    return _then(_self.copyWith(driverLocation: value));
   });
 }
 }

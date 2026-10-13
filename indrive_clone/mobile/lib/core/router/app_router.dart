@@ -11,6 +11,8 @@ import '../../features/auth/session_controller.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/common/chat_screen.dart';
 import '../../features/common/history_screen.dart';
+import '../../features/common/legal_screens.dart';
+import '../../features/common/support_screens.dart';
 import '../../features/common/profile_screens.dart';
 import '../../features/common/rate_screen.dart';
 import '../../features/driver/driver_home_screen.dart';
@@ -34,6 +36,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final s = ref.read(sessionProvider);
       final loc = state.matchedLocation;
+      // Terms and Privacy can be read at any time (also before login).
+      if (loc.startsWith('/legal/')) return null;
       const authPages = ['/login', '/otp'];
       switch (s.status) {
         case AuthStatus.loading:
@@ -84,6 +88,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       GoRoute(path: '/safety', builder: (_, _) => const SafetyScreen()),
       GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
+      GoRoute(path: '/support', builder: (_, _) => const SupportScreen()),
+      GoRoute(
+        path: '/support/new',
+        builder: (_, st) => NewTicketScreen(rideId: st.uri.queryParameters['rideId'], category: st.uri.queryParameters['category']),
+      ),
+      GoRoute(path: '/legal/:page', builder: (_, st) => LegalScreen(page: st.pathParameters['page']!)),
+      GoRoute(path: '/about', builder: (_, _) => const AboutScreen()),
     ],
   );
 });

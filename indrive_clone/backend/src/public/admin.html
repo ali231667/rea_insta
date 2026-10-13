@@ -40,7 +40,7 @@
 <nav id="tabs"></nav>
 <main><div id="err" class="err"></div><div id="view"></div></main>
 <script>
-const tabs = { stats: 'Dashboard', pending: 'Pending drivers', drivers: 'All drivers', rides: 'Rides', sos: 'SOS alerts' };
+const tabs = { stats: 'Dashboard', pending: 'Pending drivers', drivers: 'All drivers', users: 'Users', rides: 'Rides', tickets: 'Support', sos: 'SOS alerts' };
 let current = 'stats';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -66,7 +66,7 @@ async function load() {
   try {
     if (current === 'stats') {
       const s = await call('/stats');
-      const labels = { users: 'Users', drivers: 'Approved drivers', pending_drivers: 'Pending drivers', online_drivers: 'Online now', active_rides: 'Active rides', completed_rides: 'Completed rides', total_commission: 'Commission (PKR)', open_sos: 'Open SOS' };
+      const labels = { users: 'Users', drivers: 'Approved drivers', pending_drivers: 'Pending drivers', online_drivers: 'Online now', active_rides: 'Active rides', completed_rides: 'Completed rides', total_commission: 'Commission (PKR)', open_sos: 'Open SOS', open_tickets: 'Open support tickets' };
       $('view').innerHTML = `<div class="stats">${Object.entries(labels).map(([k, l]) => `<div class="stat"><div class="n">${s[k] ?? 0}</div><div class="l">${l}</div></div>`).join('')}</div>`;
     } else if (current === 'pending' || current === 'drivers') {
       const list = await call('/drivers' + (current === 'pending' ? '?status=pending' : ''));
@@ -85,6 +85,21 @@ async function load() {
       $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>Status</th><th>Service</th><th>From</th><th>To</th><th>Price</th></tr>${list.map((r) => `
         <tr><td>${new Date(r.createdAt).toLocaleString()}</td><td><span class="pill ${r.status}">${r.status}</span></td><td>${r.serviceType} / ${r.vehicleType}</td>
         <td>${esc(r.from)}</td><td>${esc(r.to)}</td><td>PKR ${r.finalFare ?? r.offeredFare}</td></tr>`).join('')}</table></div>`;
+    } else if (current === 'users') {
+      const q = window.__q || '';
+      const list = await call('/users' + (q ? '?q=' + encodeURIComponent(q) : ''));
+      $('view').innerHTML = `<p><input id="q" placeholder="Search name or phone" value="${esc(q)}" style="padding:8px;border-radius:8px;border:1px solid #ddd;width:240px"> <button class="btn" onclick="window.__q=$('q').value;load()">Search</button></p>
+        <div class="wrap"><table><tr><th>Name</th><th>Phone</th><th>Rating</th><th>Joined</th><th></th></tr>${list.map((u) => `
+        <tr><td>${esc(u.name)}</td><td>${esc(u.phone)}</td><td>${Number(u.rating).toFixed(2)} (${u.ratingCount})</td><td>${new Date(u.createdAt).toLocaleDateString()}</td>
+        <td>${u.isBlocked ? `<button class="btn ok" onclick="userAct('${u.id}','unblock')">Unblock</button>` : `<button class="btn no" onclick="userAct('${u.id}','block')">Block</button>`}</td></tr>`).join('')}</table></div>`;
+    } else if (current === 'tickets') {
+      const list = await call('/tickets');
+      $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>User</th><th>Category</th><th>Message</th><th>Status</th><th>Reply</th></tr>${list.map((t) => `
+        <tr><td>${new Date(t.createdAt).toLocaleString()}</td><td>${esc(t.userName)}<br><small>${esc(t.userPhone)}</small></td>
+        <td>${esc(t.category.replace('_', ' '))}${t.rideId ? '<br><small>ride ' + esc(t.rideId.slice(0, 8)) + '</small>' : ''}</td>
+        <td style="max-width:320px">${esc(t.message)}${t.adminReply ? `<br><small><b>Reply:</b> ${esc(t.adminReply)}</small>` : ''}</td>
+        <td><span class="pill ${t.status === 'open' ? 'pending' : 'approved'}">${t.status}</span></td>
+        <td>${t.status === 'closed' ? '' : `<button class="btn ok" onclick="reply('${t.id}')">Reply</button>`}</td></tr>`).join('')}</table></div>` + (list.length ? '' : '<p>No tickets.</p>');
     } else if (current === 'sos') {
       const list = await call('/sos');
       $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>Ride</th><th>User</th><th>Location</th><th></th></tr>${list.map((s) => `
@@ -99,6 +114,12 @@ async function act(id, action) {
   try { await call(`/drivers/${id}/${action}`, 'POST', { reason }); load(); } catch (e) { $('err').textContent = e.message; }
 }
 async function resolveSos(id) { await call(`/sos/${id}/resolve`, 'POST', {}); load(); }
+async function userAct(id, action) { if (!confirm(action + ' this user?')) return; try { await call(`/users/${id}/${action}`, 'POST', {}); load(); } catch (e) { $('err').textContent = e.message; } }
+async function reply(id) {
+  const text = prompt('Reply to the user:'); if (!text) return;
+  const close = confirm('Close the ticket after replying?');
+  try { await call(`/tickets/${id}/reply`, 'POST', { reply: text, close }); load(); } catch (e) { $('err').textContent = e.message; }
+}
 load();
 setInterval(() => current === 'stats' && load(), 10000);
 </script>

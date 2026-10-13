@@ -85,6 +85,7 @@ class DriverController extends Notifier<DriverState> {
       ..add(socket.on(SocketEvents.offerExpired).listen((d) => _setMyOfferStatus(d['rideId'] as String, 'expired')))
       ..add(socket.on(SocketEvents.rideUpdated).listen(_onRideUpdated))
       ..add(socket.on(SocketEvents.passengerLocationUpdate).listen(_onPassengerLocation))
+      ..add(socket.onReconnect.listen((_) => resync()))
       ..add(socket.on(SocketEvents.balanceUpdated).listen((d) {
         ref.read(sessionProvider.notifier).setBalance((d['balance'] as num).toInt());
       }));
@@ -123,6 +124,24 @@ class DriverController extends Notifier<DriverState> {
         state = state.copyWith(myPosition: pos.latLng);
       } catch (_) {}
     }
+  }
+
+  /// After a lost connection or when the app comes back: reload trip and order feed.
+  Future<void> resync() async {
+    try {
+      final r = state.ride;
+      if (r != null) {
+        final fresh = await ref.read(rideRepositoryProvider).get(r.id);
+        state = state.copyWith(ride: fresh);
+      } else {
+        final active = await ref.read(rideRepositoryProvider).active(role: 'driver');
+        if (active != null) {
+          state = state.copyWith(ride: active, requests: const []);
+          return;
+        }
+        await refreshRequests();
+      }
+    } catch (_) {}
   }
 
   Future<void> goOnline() async {

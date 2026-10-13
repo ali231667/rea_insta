@@ -5,9 +5,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/l10n/strings.dart';
+import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/format.dart';
 import '../../core/utils/geo.dart';
@@ -30,9 +30,16 @@ class PassengerRideScreen extends ConsumerStatefulWidget {
 
 class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
   final _map = MapController();
+  final _panelKey = GlobalKey();
   Timer? _tick;
-  bool _fitted = false;
-  String? _lastStatus;
+
+  /// The user moved the map by hand: stop moving the camera for them until they tap "center".
+  bool _userMovedMap = false;
+  DateTime _lastAutoFit = DateTime(2000);
+
+  /// Road route from the driver's car to the pickup point (refreshed when the car moves).
+  List<LatLng> _carRoute = const [];
+  LatLng? _carRouteFrom;
 
   @override
   void initState() {
@@ -53,10 +60,35 @@ class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
     super.dispose();
   }
 
-  void _fit(Ride r, LiveLocation? car) {
-    final pts = <LatLng>[r.pickup.latLng, if (r.status == RideStatus.inProgress || r.status == RideStatus.searching) r.dropoff.latLng];
-    if (car != null) pts.add(car.latLng);
-    fitPoints(_map, pts, padding: const EdgeInsets.fromLTRB(60, 120, 60, 380));
+  double get _panelHeight => _panelKey.currentContext?.size?.height ?? 380;
+
+  /// Show pickup, car and (when useful) destination above the bottom panel.
+  void _fit({bool force = false}) {
+    final s = ref.read(passengerProvider);
+    final r = s.ride;
+    if (r == null || (_userMovedMap && !force)) return;
+    final car = s.driverLocation;
+    final pts = <LatLng>[
+      if (r.status != RideStatus.inProgress) r.pickup.latLng,
+      if (r.status == RideStatus.inProgress || r.status == RideStatus.searching) r.dropoff.latLng,
+      if (car != null) car.latLng,
+    ];
+    _lastAutoFit = DateTime.now();
+    fitPoints(_map, pts, padding: EdgeInsets.fromLTRB(50, 100, 50, _panelHeight + 30));
+  }
+
+  void _fitAfterFrame({bool force = false}) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fit(force: force);
+      });
+
+  Future<void> _updateCarRoute(Ride r, LatLng car) async {
+    if (r.status != RideStatus.accepted) return;
+    if (_carRouteFrom != null && metersBetween(_carRouteFrom!, car) < 150) return;
+    _carRouteFrom = car;
+    try {
+      final info = await ref.read(mapsRepositoryProvider).route(car, r.pickup.latLng);
+      if (mounted) setState(() => _carRoute = decodePolyline(info.polyline));
+    } catch (_) {}
   }
 
   @override
@@ -69,20 +101,23 @@ class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
       if (r == null) return;
       if (next == RideStatus.completed) context.go('/rate/${r.id}');
       if (prev != next) {
-        _fitted = false;
+        _userMovedMap = false;
+        _carRoute = const [];
+        _carRouteFrom = null;
+        _fitAfterFrame();
         if (next == RideStatus.accepted) showMessage(context, 'Driver accepted! ${r.driver?.name} is coming.');
         if (next == RideStatus.arrived) showMessage(context, tr('Driver has arrived'));
       }
     });
+    // The car moved: keep it on screen (not too often, so the map does not shake).
+    ref.listen(passengerProvider.select((x) => x.driverLocation), (prev, next) {
+      final r = ref.read(passengerProvider).ride;
+      if (next == null || r == null) return;
+      _updateCarRoute(r, next.latLng);
+      if (prev == null || DateTime.now().difference(_lastAutoFit) > const Duration(seconds: 5)) _fit();
+    });
 
     if (ride == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_lastStatus != ride.status) {
-      _lastStatus = ride.status;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fit(ride, s.driverLocation));
-    } else if (!_fitted && s.driverLocation != null) {
-      _fitted = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fit(ride, s.driverLocation));
-    }
 
     final route = decodePolyline(ride.routePolyline);
     final car = s.driverLocation;
@@ -95,7 +130,10 @@ class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
             child: AppMap(
               controller: _map,
               initialCenter: ride.pickup.latLng,
-              onMapReady: () => _fit(ride, car),
+              onMapReady: _fitAfterFrame,
+              onPositionChanged: (_, gesture) {
+                if (gesture) _userMovedMap = true;
+              },
               layers: [
                 if (ride.status == RideStatus.searching)
                   CircleLayer(circles: [
@@ -110,11 +148,13 @@ class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
                   ]),
                 if (route.isNotEmpty && ride.status != RideStatus.accepted) PolylineLayer(polylines: [routeLine(route)]),
                 if (car != null && ride.status == RideStatus.accepted)
-                  PolylineLayer(polylines: [routeLine([car.latLng, ride.pickup.latLng], dashed: true)]),
+                  PolylineLayer(polylines: [
+                    _carRoute.length > 1 ? routeLine(_carRoute) : routeLine([car.latLng, ride.pickup.latLng], dashed: true),
+                  ]),
                 MarkerLayer(markers: [
+                  if (s.myPosition != null && ride.status != RideStatus.inProgress) personMarker(s.myPosition!),
                   pickupMarker(ride.pickup.latLng),
                   dropoffMarker(ride.dropoff.latLng),
-                  if (s.myPosition != null && ride.status != RideStatus.inProgress) personMarker(s.myPosition!),
                   if (car != null) carMarker(car.latLng, heading: car.heading, vehicleType: ride.vehicleType),
                 ]),
               ],
@@ -127,17 +167,26 @@ class _PassengerRideScreenState extends ConsumerState<PassengerRideScreen> {
                 if (ride.isAssigned)
                   MapCircleButton(icon: Icons.shield_outlined, tooltip: tr('Safety'), onTap: () => showSafetySheet(context, ref, ride, myPosition: s.myPosition)),
                 const Spacer(),
-                MapCircleButton(icon: Icons.center_focus_strong, onTap: () => _fit(ride, car)),
+                MapCircleButton(
+                  icon: Icons.center_focus_strong,
+                  onTap: () {
+                    _userMovedMap = false;
+                    _fit(force: true);
+                  },
+                ),
               ]),
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: switch (ride.status) {
-              RideStatus.searching => _SearchingPanel(ride: ride),
-              RideStatus.accepted || RideStatus.arrived || RideStatus.inProgress => _TripPanel(ride: ride),
-              _ => _ClosedPanel(ride: ride),
-            },
+            child: KeyedSubtree(
+              key: _panelKey,
+              child: switch (ride.status) {
+                RideStatus.searching => _SearchingPanel(ride: ride),
+                RideStatus.accepted || RideStatus.arrived || RideStatus.inProgress => _TripPanel(ride: ride),
+                _ => _ClosedPanel(ride: ride),
+              },
+            ),
           ),
         ]),
       ),
@@ -332,7 +381,7 @@ class _TripPanel extends ConsumerWidget {
       Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
       if (subtitle != null) Text(subtitle, style: const TextStyle(color: AppColors.grey)),
       // "Am I walking towards the pickup point?" (InDrive shows the passenger's position to the driver too)
-      if (ride.status != RideStatus.inProgress && s.myDistanceToPickupM != null) ...[
+      if ((ride.status == RideStatus.accepted || ride.status == RideStatus.arrived) && s.myDistanceToPickupM != null) ...[
         const SizedBox(height: 8),
         _TrendBanner(trend: s.myTrend, distanceM: s.myDistanceToPickupM!),
       ],
@@ -345,7 +394,7 @@ class _TripPanel extends ConsumerWidget {
         ActionCircle(
           icon: Icons.share_outlined,
           label: tr('Share'),
-          onTap: () => SharePlus.instance.share(ShareParams(text: tripShareText(ride, carAt: car?.latLng))),
+          onTap: () => shareTrip(ref, ride, carAt: car?.latLng),
         ),
         ActionCircle(
           icon: Icons.shield_outlined,

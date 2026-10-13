@@ -349,6 +349,65 @@ describe('InDrive ride flow', () => {
     await closed;
   });
 
+  it('an offer from a driver who went offline cannot be accepted', async () => {
+    const c = await api('POST', '/rides', passenger.accessToken, { vehicleType: 'mini', pickup: PICKUP, dropoff: DROPOFF, offeredFare: 2000 });
+    expect(c.status).toBe(201);
+    const o = await api('POST', `/rides/${c.data.id}/offers`, farDriver.accessToken, { price: 2000 });
+    expect(o.status).toBe(201);
+    await api('POST', '/drivers/me/online', farDriver.accessToken, { online: false });
+    const acc = await api('POST', `/rides/${c.data.id}/offers/${o.data.id}/accept`, passenger.accessToken);
+    expect(acc.status).toBe(409);
+    expect(acc.data.error.code).toBe('driver_unavailable');
+    await api('POST', `/rides/${c.data.id}/cancel`, passenger.accessToken, { reason: 'Test done' });
+    await api('POST', '/drivers/me/online', farDriver.accessToken, { online: true, ...FAR_DRIVER });
+  });
+
+  it('support ticket: user reports a lost item, admin replies', async () => {
+    const t = await api('POST', '/support/tickets', passenger.accessToken, { category: 'lost_item', rideId, message: 'I left my black bag in the back seat' });
+    expect(t.status).toBe(201);
+    const other = await api('POST', '/support/tickets', farDriver.accessToken, { category: 'lost_item', rideId, message: 'Trying to use a ride that is not mine' });
+    expect(other.status).toBe(403);
+    const res = await fetch(`${base}/api/v1/admin/tickets/${t.data.id}/reply`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-admin-key': 'admin123' },
+      body: JSON.stringify({ reply: 'We contacted the driver, he has your bag.' }),
+    });
+    expect(res.status).toBe(200);
+    const list = await api('GET', '/support/tickets', passenger.accessToken);
+    expect(list.data[0].status).toBe('answered');
+    expect(list.data[0].adminReply).toContain('bag');
+  });
+
+  it('share trip link works without login, only with the right signature', async () => {
+    const link = await api('GET', `/rides/${rideId}/share-link`, passenger.accessToken);
+    expect(link.status).toBe(200);
+    const [, , id, sig] = new URL(link.data.url).pathname.split('/'); // /t/<id>/<sig>
+    const ok = await fetch(`${base}/api/v1/share/${id}/${sig}`);
+    expect(ok.status).toBe(200);
+    const data = (await ok.json()) as any;
+    expect(data.status).toBe('completed');
+    expect(data.driver.plateNumber).toBe('LEA-1234');
+    expect((await fetch(`${base}/api/v1/share/${id}/wrongsignature`)).status).toBe(404);
+    expect((await fetch(`${base}/t/${id}/${sig}`)).status).toBe(200); // web page
+  });
+
+  it('admin can block a user (logged out, cannot log in again)', async () => {
+    const u = await login('03004444444', 'Bad User');
+    const block = await fetch(`${base}/api/v1/admin/users/${u.userId}/block`, { method: 'POST', headers: { 'x-admin-key': 'admin123' } });
+    expect(block.status).toBe(200);
+    expect((await api('POST', '/auth/refresh', undefined, { refreshToken: u.refreshToken })).status).toBe(401);
+    const otp = await api('POST', '/auth/otp/request', undefined, { phone: '03004444444' });
+    const v = await api('POST', '/auth/otp/verify', undefined, { phone: '03004444444', code: otp.data.devCode });
+    expect(v.status).toBe(403);
+  });
+
+  it('app config has version and legal links', async () => {
+    const c = (await (await fetch(`${base}/api/v1/config`)).json()) as any;
+    expect(c.minAppVersion).toBeTruthy();
+    expect(c.legal.termsUrl).toContain('/legal/terms');
+    expect((await fetch(`${base}/legal/privacy`)).status).toBe(200);
+  });
+
   it('driver can go offline', async () => {
     expect((await api('POST', '/drivers/me/online', driver.accessToken, { online: false })).status).toBe(200);
     const near = await api('GET', `/drivers/nearby?lat=${PICKUP.lat}&lng=${PICKUP.lng}`, passenger.accessToken);

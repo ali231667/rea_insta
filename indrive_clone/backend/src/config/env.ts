@@ -27,6 +27,12 @@ const schema = z.object({
   AUTO_APPROVE_DRIVERS: bool('true'),
   ADMIN_KEY: z.string().default('admin123'),
 
+  MIN_APP_VERSION: z.string().default('1.0.0'),
+  LATEST_APP_VERSION: z.string().default('1.0.0'),
+  STORE_URL: z.string().default('https://play.google.com/store'),
+  MAINTENANCE: bool('false'),
+  MAINTENANCE_MESSAGE: z.string().default('We are improving the service. Please try again soon.'),
+
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
 
@@ -71,6 +77,13 @@ export const env = {
   },
   autoApproveDrivers: e.AUTO_APPROVE_DRIVERS,
   adminKey: e.ADMIN_KEY,
+  app: {
+    minVersion: e.MIN_APP_VERSION,
+    latestVersion: e.LATEST_APP_VERSION,
+    storeUrl: e.STORE_URL,
+    maintenance: e.MAINTENANCE,
+    maintenanceMessage: e.MAINTENANCE_MESSAGE,
+  },
   maps: {
     googleKey: e.GOOGLE_MAPS_API_KEY || undefined,
     osrmUrl: e.OSRM_URL.replace(/\/$/, ''),

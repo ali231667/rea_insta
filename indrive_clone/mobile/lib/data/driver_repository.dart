@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -17,8 +19,15 @@ class DriverRegistration {
   String plateNumber = '';
   Set<String> services = {'city'};
 
-  /// Local file paths of photos
-  final docs = <String, String>{};
+  /// Photos (bytes + file name), key = selfie | cnicFront | cnicBack | license | vehicle
+  final docs = <String, PickedPhoto>{};
+}
+
+/// A photo chosen with the camera / gallery.
+class PickedPhoto {
+  PickedPhoto(this.bytes, this.name);
+  final Uint8List bytes;
+  final String name;
 }
 
 class DriverRepository {
@@ -38,7 +47,7 @@ class DriverRepository {
       'services': r.services.join(','),
     });
     for (final e in r.docs.entries) {
-      form.files.add(MapEntry(e.key, await MultipartFile.fromFile(e.value)));
+      form.files.add(MapEntry(e.key, MultipartFile.fromBytes(e.value.bytes, filename: e.value.name)));
     }
     return DriverProfile.fromJson(await api.post<Map<String, dynamic>>('/drivers/register', form));
   }

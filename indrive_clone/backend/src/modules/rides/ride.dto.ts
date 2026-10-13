@@ -3,6 +3,9 @@ import { db } from '../../db/client.js';
 import { drivers, rideOffers, rides, users, type Driver, type Ride, type RideOffer, type User } from '../../db/schema.js';
 import { fromXY } from '../../lib/geo.js';
 import { notFound } from '../../lib/errors.js';
+import { redis } from '../../lib/redis.js';
+import { distanceM, estimateEtaSec } from '../../lib/geo.js';
+import { getDriverLocation } from '../drivers/location.store.js';
 
 /** Data sent to the app. We never send phone numbers of strangers, only of matched rider/driver. */
 
@@ -123,7 +126,10 @@ export async function loadRideDto(rideId: string) {
   if (r.driverId) driver = (await loadPublicDrivers([r.driverId], assigned)).get(r.driverId) ?? null;
 
   let offers: ReturnType<typeof offerDto>[] = [];
+  let driversNotified = 0;
   if (r.status === 'searching') {
+    // How many drivers saw this request (the app shows it while searching).
+    driversNotified = await redis.scard(`ride:${r.id}:notified`);
     const list = await db
       .select()
       .from(rideOffers)
@@ -132,7 +138,24 @@ export async function loadRideDto(rideId: string) {
     offers = list.map((o) => offerDto(o, ds.get(o.driverId)));
   }
 
-  return { ...rideCore(r), passenger: publicUser(p, assigned), driver, offers };
+  // Last known car position, so the map is not empty when the app opens again.
+  let driverLocation = null;
+  if (assigned && r.driverId) {
+    const loc = await getDriverLocation(r.driverId);
+    if (loc) {
+      const target = r.status === 'in_progress' ? fromXY(r.dropoff) : fromXY(r.pickup);
+      driverLocation = {
+        rideId: r.id,
+        lat: loc.lat,
+        lng: loc.lng,
+        heading: loc.heading,
+        distanceM: Math.round(distanceM(loc, target)),
+        etaSec: estimateEtaSec(loc, target),
+      };
+    }
+  }
+
+  return { ...rideCore(r), passenger: publicUser(p, assigned), driver, offers, driversNotified, driverLocation };
 }
 
 export type RideDto = Awaited<ReturnType<typeof loadRideDto>>;

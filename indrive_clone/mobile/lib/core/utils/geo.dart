@@ -27,7 +27,9 @@ List<LatLng> decodePolyline(String? encoded) {
       result |= (b & 0x1f) << shift;
       shift += 5;
     } while (b >= 0x20);
-    return (result & 1) != 0 ? ~(result >> 1) : result >> 1;
+    // Note: not using `~` here. On the web `~` gives an unsigned 32-bit number.
+    final v = result >> 1;
+    return (result & 1) != 0 ? -v - 1 : v;
   }
 
   while (index < encoded.length) {

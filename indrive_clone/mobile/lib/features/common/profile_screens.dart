@@ -32,7 +32,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final x = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 800);
     if (x == null) return;
     try {
-      final me = await ref.read(userRepositoryProvider).uploadPhoto(x.path);
+      final me = await ref.read(userRepositoryProvider).uploadPhoto(await x.readAsBytes(), x.name);
       ref.read(sessionProvider.notifier).updateMe(me);
     } catch (e) {
       if (mounted) showError(context, e);
@@ -229,11 +229,50 @@ class _SavedPlacesState extends ConsumerState<_SavedPlaces> {
 
 /* ------------------------------ Safety ------------------------------ */
 
-class SafetyScreen extends ConsumerWidget {
+class SafetyScreen extends ConsumerStatefulWidget {
   const SafetyScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SafetyScreen> createState() => _SafetyScreenState();
+}
+
+class _SafetyScreenState extends ConsumerState<SafetyScreen> {
+  /// Saved as "Name|03001234567"
+  late List<String> _contacts = ref.read(prefsProvider).emergencyContacts;
+
+  Future<void> _save(List<String> list) async {
+    await ref.read(prefsProvider).setEmergencyContacts(list);
+    setState(() => _contacts = list);
+  }
+
+  Future<void> _add() async {
+    final name = TextEditingController(), phone = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Add trusted contact'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: name, decoration: const InputDecoration(labelText: 'Name'), textCapitalization: TextCapitalization.words),
+          const SizedBox(height: 8),
+          TextField(controller: phone, decoration: const InputDecoration(labelText: 'Phone (03001234567)'), keyboardType: TextInputType.phone),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('Save'))),
+        ],
+      ),
+    );
+    final p = phone.text.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (ok != true) return;
+    if (name.text.trim().isEmpty || p.length < 10) {
+      if (mounted) showMessage(context, 'Enter a name and a valid phone number', error: true);
+      return;
+    }
+    await _save([..._contacts, '${name.text.trim()}|$p'].take(5).toList());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(tr('Safety'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
@@ -245,11 +284,30 @@ class SafetyScreen extends ConsumerWidget {
         const SizedBox(height: 6),
         InfoTile(icon: Icons.emergency_outlined, iconColor: AppColors.red, text: 'Ambulance (Edhi)', subtitle: AppConfig.ambulance, onTap: () => callPhone(AppConfig.ambulance)),
         const SizedBox(height: 20),
+        Row(children: [
+          Expanded(child: Text(tr('Trusted contacts'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+          if (_contacts.length < 5) TextButton.icon(onPressed: _add, icon: const Icon(Icons.add), label: Text(tr('Add'))),
+        ]),
+        const Text('They get an SMS with your live trip when you press SOS or "Send SMS to trusted contacts".',
+            style: TextStyle(color: AppColors.grey)),
+        for (final c in _contacts)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: UserAvatar(name: c.split('|').first, radius: 20),
+            title: Text(c.split('|').first),
+            subtitle: Text(c.split('|').last),
+            trailing: IconButton(
+              tooltip: 'Remove',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _save(_contacts.where((x) => x != c).toList()),
+            ),
+          ),
+        const SizedBox(height: 20),
         const Text('Safety tips', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         for (final t in const [
           'Check the number plate, car model and driver photo before you get in.',
-          'Share your trip with family from the ride screen.',
+          'Share your trip with family from the ride screen. They can follow the car live.',
           'Sit in the back seat when you ride alone.',
           'Use the in-app chat and call. Do not share personal details.',
           'Press the Safety button during a ride to call for help. Our team also gets an SOS alert.',
@@ -283,12 +341,24 @@ class HelpScreen extends StatelessWidget {
             ExpansionTile(title: Text(q, style: const TextStyle(fontWeight: FontWeight.w600)), children: [
               Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), child: Text(a)),
             ]),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.report_outlined),
+            title: Text(tr('Report a problem')),
+            onTap: () => context.push('/support/new'),
+          ),
           ListTile(
             leading: const Icon(Icons.support_agent),
-            title: const Text('Contact support'),
+            title: Text(tr('My support requests')),
+            onTap: () => context.push('/support'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.mail_outline),
+            title: const Text('Email us'),
             subtitle: const Text('support@example.com'),
             onTap: () => launchUrl(Uri.parse('mailto:support@example.com?subject=InDrive%20clone%20support')),
           ),
+          ListTile(leading: const Icon(Icons.info_outline), title: Text(tr('About')), onTap: () => context.push('/about')),
         ]),
       );
 }

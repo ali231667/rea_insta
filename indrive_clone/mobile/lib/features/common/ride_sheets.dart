@@ -55,6 +55,29 @@ Future<void> callPhone(String? phone) async {
   await launchUrl(Uri(scheme: 'tel', path: phone));
 }
 
+/// Share the trip: a live web link (family can follow the car) + trip details.
+Future<void> shareTrip(WidgetRef ref, Ride r, {LatLng? carAt}) async {
+  String? link;
+  try {
+    link = await ref.read(supportRepositoryProvider).shareLink(r.id);
+  } catch (_) {}
+  final text = tripShareText(r, carAt: carAt) + (link != null ? '\nFollow my trip live: $link' : '');
+  await SharePlus.instance.share(ShareParams(text: text));
+}
+
+/// Sends the trip by SMS to the trusted contacts saved in Safety settings.
+Future<bool> smsTrustedContacts(WidgetRef ref, Ride r, {LatLng? carAt}) async {
+  final contacts = ref.read(prefsProvider).emergencyContacts.map((c) => c.split('|').last).where((p) => p.isNotEmpty).toList();
+  if (contacts.isEmpty) return false;
+  String? link;
+  try {
+    link = await ref.read(supportRepositoryProvider).shareLink(r.id);
+  } catch (_) {}
+  final body = 'I need help. ${tripShareText(r, carAt: carAt)}${link != null ? '\nLive: $link' : ''}';
+  await launchUrl(Uri(scheme: 'sms', path: contacts.join(','), queryParameters: {'body': body}));
+  return true;
+}
+
 /// Text to share the trip with family (InDrive "Share trip").
 String tripShareText(Ride r, {LatLng? carAt}) {
   final d = r.driver;
@@ -82,6 +105,8 @@ Future<void> showSafetySheet(BuildContext context, WidgetRef ref, Ride ride, {La
             onPressed: () async {
               // Tell our server (admin panel shows SOS alerts) and call police.
               ref.read(rideRepositoryProvider).sos(ride.id, myPosition).catchError((_) {});
+              // Also tell trusted contacts (opens the SMS app)
+              smsTrustedContacts(ref, ride, carAt: myPosition).catchError((_) => false);
               await callPhone(AppConfig.police);
             },
           ),
@@ -106,8 +131,20 @@ Future<void> showSafetySheet(BuildContext context, WidgetRef ref, Ride ride, {La
           const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.share_outlined),
-            label: const Text('Share my trip with family'),
-            onPressed: () => SharePlus.instance.share(ShareParams(text: tripShareText(ride, carAt: myPosition))),
+            label: const Text('Share my trip (live link)'),
+            onPressed: () => shareTrip(ref, ride, carAt: myPosition),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.sms_outlined),
+            label: const Text('Send SMS to my trusted contacts'),
+            onPressed: () async {
+              final ok = await smsTrustedContacts(ref, ride, carAt: myPosition);
+              if (!ok && context.mounted) {
+                Navigator.pop(context);
+                showMessage(context, 'Add trusted contacts in Safety settings first');
+              }
+            },
           ),
           const SizedBox(height: 12),
           const Text('Always check the car number plate before you get in.', style: TextStyle(color: AppColors.grey), textAlign: TextAlign.center),

@@ -19,6 +19,12 @@ class SocketService {
   final _messages = StreamController<SocketMessage>.broadcast();
   final connected = ValueNotifier<bool>(false);
 
+  /// Fires every time the connection comes back (after the first connect).
+  /// Screens reload their data then, because events sent while offline are lost.
+  final _reconnected = StreamController<void>.broadcast();
+  Stream<void> get onReconnect => _reconnected.stream;
+  bool _wasConnected = false;
+
   Stream<Map<String, dynamic>> on(String event) => _messages.stream.where((m) => m.event == event).map((m) => m.data);
 
   /// Called after login.
@@ -36,7 +42,11 @@ class SocketService {
           .setAuthFn((cb) => cb({'token': api.tokens.accessToken ?? ''}))
           .build(),
     );
-    s.onConnect((_) => connected.value = true);
+    s.onConnect((_) {
+      connected.value = true;
+      if (_wasConnected) _reconnected.add(null);
+      _wasConnected = true;
+    });
     s.onDisconnect((_) => connected.value = false);
     s.onConnectError((err) async {
       connected.value = false;
@@ -63,6 +73,7 @@ class SocketService {
   void disconnect() {
     _socket?.dispose();
     _socket = null;
+    _wasConnected = false;
     connected.value = false;
   }
 }

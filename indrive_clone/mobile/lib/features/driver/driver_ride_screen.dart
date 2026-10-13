@@ -208,7 +208,7 @@ class _DriverTripPanel extends ConsumerWidget {
     String? paxInfo;
     Color paxColor = AppColors.grey;
     final pl = s.passengerLocation;
-    if (pl?.distanceToPickupM != null && ride.status != RideStatus.inProgress) {
+    if (pl?.distanceToPickupM != null && (ride.status == RideStatus.accepted || ride.status == RideStatus.arrived)) {
       final d = pl!.distanceToPickupM!;
       if (d < 30) {
         (paxInfo, paxColor) = ('Passenger is at the pickup point', AppColors.green);

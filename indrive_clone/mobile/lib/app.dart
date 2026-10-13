@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/providers.dart';
 import 'core/push/push_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/session_controller.dart';
+import 'features/driver/driver_controller.dart';
+import 'features/passenger/passenger_controller.dart';
+import 'widgets/app_shell.dart';
 
 class InDriveCloneApp extends ConsumerStatefulWidget {
   const InDriveCloneApp({super.key});
@@ -15,9 +19,28 @@ class InDriveCloneApp extends ConsumerStatefulWidget {
 }
 
 class _InDriveCloneAppState extends ConsumerState<InDriveCloneApp> {
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    // Phone apps are paused in the background. When the user comes back, load fresh data.
+    _lifecycle = AppLifecycleListener(onResume: () {
+      final s = ref.read(sessionProvider);
+      if (s.status != AuthStatus.loggedIn) return;
+      ref.read(socketProvider).connect();
+      if (s.mode == AppMode.driver) {
+        ref.read(driverProvider.notifier).resync();
+      } else {
+        ref.read(passengerProvider.notifier).resync();
+      }
+    });
     // Tapping a push notification opens its screen.
     final push = PushService.instance;
     push.onOpenRoute = (route) {
@@ -46,6 +69,7 @@ class _InDriveCloneAppState extends ConsumerState<InDriveCloneApp> {
       darkTheme: AppTheme.dark(),
       themeMode: s.themeMode,
       routerConfig: router,
+      builder: (context, child) => AppShell(child: child ?? const SizedBox()),
       // Urdu is right-to-left; Flutter turns the layout around by itself.
       locale: Locale(s.language),
       supportedLocales: const [Locale('en'), Locale('ur')],

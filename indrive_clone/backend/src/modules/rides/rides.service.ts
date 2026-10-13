@@ -165,6 +165,11 @@ export async function acceptOffer(passengerId: string, rideId: string, offerId: 
       const [offer] = await tx.select().from(rideOffers).where(and(eq(rideOffers.id, offerId), eq(rideOffers.rideId, rideId)));
       if (!offer) throw notFound('Offer not found');
       if (offer.status !== 'pending' || offer.expiresAt < new Date()) throw conflict('This offer has expired', 'offer_expired');
+      const [drv] = await tx.select({ isOnline: drivers.isOnline, status: drivers.status }).from(drivers).where(eq(drivers.userId, offer.driverId));
+      if (!drv?.isOnline || drv.status !== 'approved') {
+        await tx.update(rideOffers).set({ status: 'withdrawn' }).where(eq(rideOffers.id, offerId));
+        throw conflict('This driver is not available any more. Please choose another offer.', 'driver_unavailable');
+      }
 
       const [r] = (await tx
         .update(rides)

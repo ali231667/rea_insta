@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/l10n/strings.dart';
 import '../../core/theme/app_theme.dart';
@@ -74,6 +75,16 @@ class AppDrawer extends ConsumerWidget {
           ListTile(leading: const Icon(Icons.shield_outlined), title: Text(tr('Safety')), onTap: () => go('/safety')),
           ListTile(leading: const Icon(Icons.settings_outlined), title: Text(tr('Settings')), onTap: () => go('/settings')),
           ListTile(leading: const Icon(Icons.help_outline), title: Text(tr('Help')), onTap: () => go('/help')),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard),
+            title: Text(tr('Invite friends')),
+            onTap: () {
+              Navigator.pop(context);
+              SharePlus.instance.share(ShareParams(
+                text: 'I use inDrive clone: offer your own price for rides in Pakistan. Download it: https://play.google.com/store',
+              ));
+            },
+          ),
           const Spacer(),
           Padding(
             padding: const EdgeInsets.all(16),

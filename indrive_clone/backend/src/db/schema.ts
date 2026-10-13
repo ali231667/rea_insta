@@ -292,6 +292,37 @@ export const walletTransactions = pgTable(
   (t) => [index('wallet_tx_driver_idx').on(t.driverId, t.createdAt)],
 );
 
+export const ticketCategoryEnum = pgEnum('ticket_category', [
+  'lost_item',
+  'driver_behaviour',
+  'passenger_behaviour',
+  'fare_issue',
+  'safety',
+  'app_problem',
+  'account',
+  'other',
+]);
+export const ticketStatusEnum = pgEnum('ticket_status', ['open', 'answered', 'closed']);
+
+/** "Report a problem" / "I lost an item" / help requests. Answered from the admin page. */
+export const supportTickets = pgTable(
+  'support_tickets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    rideId: uuid('ride_id').references(() => rides.id),
+    category: ticketCategoryEnum('category').notNull(),
+    message: text('message').notNull(),
+    status: ticketStatusEnum('status').notNull().default('open'),
+    adminReply: text('admin_reply'),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('support_tickets_user_idx').on(t.userId, t.createdAt)],
+);
+
 export const sosAlerts = pgTable('sos_alerts', {
   id: uuid('id').primaryKey().defaultRandom(),
   rideId: uuid('ride_id').references(() => rides.id),

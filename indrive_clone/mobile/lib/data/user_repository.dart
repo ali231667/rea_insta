@@ -15,8 +15,8 @@ class UserRepository {
     return Me.fromJson(await api.patch<Map<String, dynamic>>('/users/me', body));
   }
 
-  Future<Me> uploadPhoto(String filePath) async {
-    final form = FormData.fromMap({'photo': await MultipartFile.fromFile(filePath)});
+  Future<Me> uploadPhoto(List<int> bytes, String fileName) async {
+    final form = FormData.fromMap({'photo': MultipartFile.fromBytes(bytes, filename: fileName)});
     return Me.fromJson(await api.post<Map<String, dynamic>>('/users/me/photo', form));
   }
 

@@ -132,7 +132,9 @@ class PassengerController extends Notifier<PassengerState> {
       ..add(socket.on(SocketEvents.offerNew).listen(_onOfferNew))
       ..add(socket.on(SocketEvents.offerUpdated).listen(_onOfferUpdated))
       ..add(socket.on(SocketEvents.searchProgress).listen(_onSearchProgress))
-      ..add(socket.on(SocketEvents.driverLocationUpdate).listen(_onDriverLocation));
+      ..add(socket.on(SocketEvents.driverLocationUpdate).listen(_onDriverLocation))
+      // Back online / app opened again: get the latest ride (offers or status may have changed).
+      ..add(socket.onReconnect.listen((_) => resync()));
     ref.onDispose(() {
       for (final s in _subs) {
         s.cancel();
@@ -154,6 +156,18 @@ class PassengerController extends Notifier<PassengerState> {
       state = state.copyWith(locationFailed: true);
     }
     await restoreActiveRide();
+  }
+
+  /// Reload the current ride from the server.
+  Future<void> resync() async {
+    final r = state.ride;
+    try {
+      if (r != null && r.isActive) {
+        _setRide(await ref.read(rideRepositoryProvider).get(r.id));
+      } else if (r == null) {
+        await restoreActiveRide();
+      }
+    } catch (_) {}
   }
 
   Future<void> restoreActiveRide() async {
@@ -297,8 +311,14 @@ class PassengerController extends Notifier<PassengerState> {
 
   void _setRide(Ride ride) {
     final old = state.ride;
-    // Keep offers we got by socket if the server copy has none (e.g. after raise fare)
-    state = state.copyWith(ride: ride);
+    if (state.driverLocation == null && ride.driverLocation != null) {
+      state = state.copyWith(driverLocation: ride.driverLocation);
+    }
+    state = state.copyWith(
+      ride: ride,
+      // The server count can arrive before or after the socket event: keep the bigger one.
+      driversNotified: old?.id == ride.id ? (ride.driversNotified > state.driversNotified ? ride.driversNotified : state.driversNotified) : ride.driversNotified,
+    );
     if (ride.isAssigned) {
       _startSharing();
     } else {

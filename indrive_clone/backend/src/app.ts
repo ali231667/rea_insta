@@ -14,6 +14,8 @@ import { placesRouter } from './modules/places/places.routes.js';
 import { ridesRouter } from './modules/rides/rides.routes.js';
 import { SERVICE_VEHICLES, VEHICLE_LABELS } from './modules/rides/fare.js';
 import { usersRouter } from './modules/users/users.routes.js';
+import { supportRouter } from './modules/support/support.routes.js';
+import { shareApiRouter } from './modules/share/share.routes.js';
 import { env } from './config/env.js';
 
 export function createApp() {
@@ -39,6 +41,12 @@ export function createApp() {
       commissionRate: env.commissionRate,
       emergencyNumbers: { police: '15', rescue: '1122', ambulance: '115' },
       supportPhone: '+920000000000',
+      // The app shows "Please update" when its version is lower than minAppVersion.
+      minAppVersion: env.app.minVersion,
+      latestAppVersion: env.app.latestVersion,
+      storeUrl: env.app.storeUrl,
+      maintenance: env.app.maintenance ? { message: env.app.maintenanceMessage } : null,
+      legal: { termsUrl: `${env.publicUrl}/legal/terms`, privacyUrl: `${env.publicUrl}/legal/privacy` },
     });
   });
 
@@ -50,9 +58,22 @@ export function createApp() {
   api.use('/maps', mapsRouter);
   api.use('/places', placesRouter);
   api.use('/admin', adminRouter);
+  api.use('/support', supportRouter);
+  api.use('/', shareApiRouter);
   app.use('/api/v1', api);
 
   app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
+  // Terms of Service + Privacy Policy (app stores need public links)
+  app.get('/legal/:page', (req, res, next) => {
+    if (req.params.page !== 'terms' && req.params.page !== 'privacy') return next();
+    res.sendFile(path.resolve(process.cwd(), `src/public/legal/${req.params.page}.html`));
+  });
+
+  // Live trip page for family ("Share trip" link)
+  app.get('/t/:id/:sig', (_req, res) => {
+    res.sendFile(path.resolve(process.cwd(), 'src/public/trip.html'));
+  });
+
   // Admin web page (approve drivers, see rides and SOS alerts)
   app.get('/admin', (_req, res) => {
     res.sendFile(path.resolve(process.cwd(), 'src/public/admin.html'));

@@ -71,7 +71,21 @@ void fitPoints(MapController c, List<LatLng> points, {EdgeInsets padding = const
     return;
   }
   try {
-    c.fitCamera(CameraFit.coordinates(coordinates: points, padding: padding, maxZoom: 17));
+    // On small screens the padding can be bigger than the map. Then the camera breaks (zoom 0),
+    // so we shrink the padding to leave at least 120 px of map for the points.
+    final size = c.camera.size;
+    var p = padding;
+    if (size.height > 0 && size.width > 0) {
+      double fit(double a, double b, double total) {
+        final room = total - 120;
+        if (a + b <= room || room <= 0) return 1;
+        return room / (a + b);
+      }
+
+      final fv = fit(p.top, p.bottom, size.height), fh = fit(p.left, p.right, size.width);
+      p = EdgeInsets.fromLTRB(p.left * fh, p.top * fv, p.right * fh, p.bottom * fv);
+    }
+    c.fitCamera(CameraFit.coordinates(coordinates: points, padding: p, maxZoom: 17));
   } catch (_) {
     // Map not ready yet.
   }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +27,9 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
 
   Future<void> _pick(String doc, {bool camera = false}) async {
     final x = await ImagePicker().pickImage(source: camera ? ImageSource.camera : ImageSource.gallery, imageQuality: 70, maxWidth: 1600);
-    if (x != null) setState(() => _form.docs[doc] = x.path);
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    setState(() => _form.docs[doc] = PickedPhoto(bytes, x.name.isEmpty ? '$doc.jpg' : x.name));
   }
 
   Future<void> _submit() async {
@@ -84,7 +84,7 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
             content: Form(
               key: _keys[0],
               child: Column(children: [
-                _PhotoRow(label: 'Your photo (selfie)', path: _form.docs['selfie'], onTap: () => _pick('selfie', camera: true)),
+                _PhotoRow(label: 'Your photo (selfie)', photo: _form.docs['selfie'], onTap: () => _pick('selfie', camera: true)),
                 const SizedBox(height: 12),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'CNIC number', hintText: '35202-1234567-1'),
@@ -95,9 +95,9 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
                   onChanged: (v) => _form.cnicNumber = v,
                 ),
                 const SizedBox(height: 12),
-                _PhotoRow(label: 'CNIC front', path: _form.docs['cnicFront'], onTap: () => _pick('cnicFront')),
+                _PhotoRow(label: 'CNIC front', photo: _form.docs['cnicFront'], onTap: () => _pick('cnicFront')),
                 const SizedBox(height: 8),
-                _PhotoRow(label: 'CNIC back', path: _form.docs['cnicBack'], onTap: () => _pick('cnicBack')),
+                _PhotoRow(label: 'CNIC back', photo: _form.docs['cnicBack'], onTap: () => _pick('cnicBack')),
                 const SizedBox(height: 12),
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Driving license number'),
@@ -106,7 +106,7 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
                   onChanged: (v) => _form.licenseNumber = v.trim(),
                 ),
                 const SizedBox(height: 12),
-                _PhotoRow(label: 'Driving license photo', path: _form.docs['license'], onTap: () => _pick('license')),
+                _PhotoRow(label: 'Driving license photo', photo: _form.docs['license'], onTap: () => _pick('license')),
               ]),
             ),
           ),
@@ -137,9 +137,17 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
                 _text('Make (e.g. Suzuki, Toyota, Honda)', (v) => _form.vehicleMake = v, _form.vehicleMake),
                 _text('Model (e.g. Alto, Corolla, CD 70)', (v) => _form.vehicleModel = v, _form.vehicleModel),
                 _text('Color', (v) => _form.vehicleColor = v, _form.vehicleColor),
-                _text('Year (optional)', (v) => _form.vehicleYear = v, _form.vehicleYear, required: false, number: true),
-                _text('Number plate (e.g. LEA-1234)', (v) => _form.plateNumber = v, _form.plateNumber),
-                _PhotoRow(label: 'Vehicle photo (number plate visible)', path: _form.docs['vehicle'], onTap: () => _pick('vehicle')),
+                _text('Year (optional)', (v) => _form.vehicleYear = v, _form.vehicleYear, required: false, number: true, validator: (v) {
+                  if (v == null || v.isEmpty) return null;
+                  final y = int.tryParse(v);
+                  final max = DateTime.now().year + 1;
+                  return y == null || y < 1980 || y > max ? 'Enter a year from 1980 to $max' : null;
+                }),
+                _text('Number plate (e.g. LEA-1234)', (v) => _form.plateNumber = v, _form.plateNumber, validator: (v) {
+                  final t = (v ?? '').trim();
+                  return RegExp(r'^[A-Za-z]{1,4}[- ]?\d{1,4}$').hasMatch(t) ? null : 'Use the format LEA-1234';
+                }),
+                _PhotoRow(label: 'Vehicle photo (number plate visible)', photo: _form.docs['vehicle'], onTap: () => _pick('vehicle')),
               ]),
             ),
           ),
@@ -167,35 +175,38 @@ class _DriverRegisterScreenState extends ConsumerState<DriverRegisterScreen> {
     );
   }
 
-  Widget _text(String label, void Function(String) onChanged, String initial, {bool required = true, bool number = false}) => Padding(
+  Widget _text(String label, void Function(String) onChanged, String initial,
+          {bool required = true, bool number = false, String? Function(String?)? validator}) =>
+      Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: TextFormField(
           decoration: InputDecoration(labelText: label),
           initialValue: initial,
           keyboardType: number ? TextInputType.number : TextInputType.text,
+          inputFormatters: number ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)] : null,
           textCapitalization: TextCapitalization.words,
-          validator: (v) => !required || (v ?? '').trim().isNotEmpty ? null : 'Required',
+          validator: validator ?? (v) => !required || (v ?? '').trim().isNotEmpty ? null : 'Required',
           onChanged: (v) => onChanged(v.trim()),
         ),
       );
 }
 
 class _PhotoRow extends StatelessWidget {
-  const _PhotoRow({required this.label, required this.path, required this.onTap});
+  const _PhotoRow({required this.label, required this.photo, required this.onTap});
   final String label;
-  final String? path;
+  final PickedPhoto? photo;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => InfoTile(
-        icon: path == null ? Icons.add_a_photo_outlined : Icons.check_circle,
-        iconColor: path == null ? null : AppColors.green,
+        icon: photo == null ? Icons.add_a_photo_outlined : Icons.check_circle,
+        iconColor: photo == null ? null : AppColors.green,
         text: label,
-        subtitle: path == null ? 'Tap to add a photo' : 'Photo added · tap to change',
+        subtitle: photo == null ? 'Tap to add a photo' : 'Photo added · tap to change',
         onTap: onTap,
-        trailing: path == null
+        trailing: photo == null
             ? null
-            : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(path!), width: 44, height: 44, fit: BoxFit.cover)),
+            : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(photo!.bytes, width: 44, height: 44, fit: BoxFit.cover)),
       );
 }
 

@@ -65,8 +65,18 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               ),
             ]),
             const Spacer(),
-            const Text('By continuing you agree to the Terms of Service and Privacy Policy.',
-                style: TextStyle(color: AppColors.grey, fontSize: 12)),
+            Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+              const Text('By continuing you agree to the ', style: TextStyle(color: AppColors.grey, fontSize: 12)),
+              InkWell(
+                onTap: () => context.push('/legal/terms'),
+                child: Text(tr('Terms of Service'), style: const TextStyle(fontSize: 12, decoration: TextDecoration.underline)),
+              ),
+              const Text(' and ', style: TextStyle(color: AppColors.grey, fontSize: 12)),
+              InkWell(
+                onTap: () => context.push('/legal/privacy'),
+                child: Text(tr('Privacy Policy'), style: const TextStyle(fontSize: 12, decoration: TextDecoration.underline)),
+              ),
+            ]),
             const SizedBox(height: 12),
             LoadingButton(label: tr('Continue'), onPressed: _valid ? _send : null),
           ]),

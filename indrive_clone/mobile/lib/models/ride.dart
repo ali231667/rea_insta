@@ -103,6 +103,12 @@ abstract class Ride with _$Ride {
     PublicUser? passenger,
     PublicDriver? driver,
     @Default([]) List<Offer> offers,
+
+    /// While searching: how many drivers got this request.
+    @Default(0) int driversNotified,
+
+    /// Last known car position (assigned rides), so the map is not empty after reopening the app.
+    LiveLocation? driverLocation,
   }) = _Ride;
 
   factory Ride.fromJson(Map<String, dynamic> json) => _$RideFromJson(json);

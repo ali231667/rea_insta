@@ -125,6 +125,10 @@ _Ride _$RideFromJson(Map<String, dynamic> json) => _Ride(
           ?.map((e) => Offer.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  driversNotified: (json['driversNotified'] as num?)?.toInt() ?? 0,
+  driverLocation: json['driverLocation'] == null
+      ? null
+      : LiveLocation.fromJson(json['driverLocation'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$RideToJson(_Ride instance) => <String, dynamic>{
@@ -160,6 +164,8 @@ Map<String, dynamic> _$RideToJson(_Ride instance) => <String, dynamic>{
   'passenger': instance.passenger,
   'driver': instance.driver,
   'offers': instance.offers,
+  'driversNotified': instance.driversNotified,
+  'driverLocation': instance.driverLocation,
 };
 
 _DriverRequest _$DriverRequestFromJson(Map<String, dynamic> json) =>
