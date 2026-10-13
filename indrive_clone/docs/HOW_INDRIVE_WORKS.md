@@ -149,7 +149,7 @@ After "I have arrived", both apps show a waiting timer. (InDrive gives a few fre
 | Passenger location for the driver + "walking towards / away" | ✅ | Socket.IO `passenger:location` |
 | Call driver / passenger | ✅ (phone call) | `callPhone` |
 | In-app chat with quick replies | ✅ | `chat_screen.dart` |
-| Share trip with family | ✅ | `tripShareText` |
+| Share trip with family (live web page) + SMS to trusted contacts | ✅ | `shareTrip`, `backend/src/modules/share`, `public/trip.html` |
 | Safety: SOS (Police 15, Rescue 1122, Ambulance 115) + SOS alert to admin | ✅ | `showSafetySheet`, admin page |
 | Cancel with reason (both sides) | ✅ | `askCancelReason` |
 | Rating both ways + tags | ✅ | `rate_screen.dart`, driver dialog |
@@ -164,7 +164,12 @@ After "I have arrived", both apps show a waiting timer. (InDrive gives a few fre
 | Earnings (today / week / month), commission, wallet, top-up | ✅ (demo payment) | `earnings_screen.dart` |
 | Push notifications | ✅ Firebase Cloud Messaging | `core/push/push_service.dart`, `backend/src/lib/push.ts` |
 | Dark mode | ✅ | `app_theme.dart` |
-| Restore ride after app restart | ✅ | `GET /rides/active` |
+| Restore ride after app restart / reconnect | ✅ | `GET /rides/active`, `resync()` |
+| Help center: report a problem, lost item, replies from support | ✅ | `support_screens.dart`, `/admin` → Support |
+| Terms, Privacy, About, licenses | ✅ | `legal_screens.dart`, `/legal/*` |
+| Force update + maintenance mode | ✅ | `app_shell.dart`, `GET /config` |
+| Offline banner | ✅ | `app_shell.dart` |
+| Invite friends | ✅ | `app_drawer.dart` |
 
 ### Not included (needs a real company / paid services)
 - Real SMS (code is printed in the server log; Twilio is ready in `sms.ts`, just add keys).

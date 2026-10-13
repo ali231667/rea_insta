@@ -166,7 +166,7 @@ class _DriverRideScreenState extends ConsumerState<DriverRideScreen> {
                   foregroundColor: Colors.white,
                   onPressed: () => _navigate(target.latLng),
                   icon: const Icon(Icons.turn_right),
-                  label: const Text('Navigate'),
+                  label: Text(tr('Navigate')),
                 ),
               ]),
             ),
@@ -193,14 +193,14 @@ class _DriverTripPanel extends ConsumerWidget {
     final String? subtitle;
     switch (ride.status) {
       case RideStatus.accepted:
-        title = 'Go to pickup';
+        title = tr('Go to pickup');
         subtitle = me == null ? null : '${distanceText(metersBetween(me, ride.pickup.latLng))} · ${ride.pickup.address}';
       case RideStatus.arrived:
         final waited = DateTime.now().difference(ride.arrivedAt ?? DateTime.now());
-        title = 'Waiting for passenger';
+        title = tr('Waiting for passenger');
         subtitle = '${waited.inMinutes}:${(waited.inSeconds % 60).toString().padLeft(2, '0')} min waited';
       default:
-        title = 'Drive to destination';
+        title = tr('Drive to destination');
         subtitle = me == null ? ride.dropoff.address : '${distanceText(metersBetween(me, ride.dropoff.latLng))} · ${ride.dropoff.address}';
     }
 

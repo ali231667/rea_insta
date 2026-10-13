@@ -482,7 +482,7 @@ class _ClosedPanel extends ConsumerWidget {
       const SizedBox(height: 16),
       if (expired || byDriver) ...[
         LoadingButton(
-          label: 'Order again',
+          label: tr('Order again'),
           onPressed: () async {
             n.clearRideKeepDraft();
             await n.createRide();

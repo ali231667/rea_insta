@@ -38,6 +38,54 @@ async function cached<T>(key: string, ttlSec: number, fn: () => Promise<T>): Pro
 
 const r5 = (n: number) => n.toFixed(5);
 
+/**
+ * The free Nominatim server allows about 1 request per second.
+ * We wait our turn (shared by all users of this server) so we are not blocked with HTTP 429.
+ */
+let nominatimNext = 0;
+async function nominatimTurn() {
+  const now = Date.now();
+  const wait = Math.max(0, nominatimNext - now);
+  nominatimNext = Math.max(now, nominatimNext) + 1100;
+  if (wait > 3000) throw new Error('Nominatim busy'); // too many waiting: use the fallback now
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+}
+
+/** Photon (komoot) is a second free OpenStreetMap search, used when Nominatim fails. */
+type PhotonFeature = {
+  properties: { name?: string; street?: string; housenumber?: string; district?: string; locality?: string; city?: string; state?: string; country?: string };
+  geometry: { coordinates: [number, number] };
+};
+const PAKISTAN_BBOX = '60.87,23.63,77.84,37.08';
+
+function photonPlace(f: PhotonFeature): Place {
+  const p = f.properties;
+  const street = [p.housenumber, p.street].filter(Boolean).join(' ');
+  const name = p.name || street || p.district || p.city || 'Place';
+  const address = [p.name !== street ? street : null, p.locality, p.district, p.city, p.state, p.country].filter((x, i, a) => x && a.indexOf(x) === i).join(', ');
+  return { name, address: address || name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+}
+
+async function photonSearch(q: string, near?: LatLng): Promise<Place[]> {
+  const params = new URLSearchParams({ q, limit: '8', lang: 'en', bbox: PAKISTAN_BBOX });
+  if (near) {
+    params.set('lat', String(near.lat));
+    params.set('lon', String(near.lng));
+  }
+  const data = await getJson<{ features: PhotonFeature[] }>(`https://photon.komoot.io/api/?${params}`);
+  return data.features.map(photonPlace);
+}
+
+async function photonReverse(p: LatLng): Promise<Place | null> {
+  const data = await getJson<{ features: PhotonFeature[] }>(`https://photon.komoot.io/reverse?lat=${p.lat}&lon=${p.lng}&lang=en`);
+  const f = data.features[0];
+  if (!f) return null;
+  const place = photonPlace(f);
+  const pr = f.properties;
+  const area = pr.district || pr.locality || pr.city;
+  return { ...place, name: pr.street ? `${pr.street}${area ? `, ${area}` : ''}` : place.name, ...p };
+}
+
 /* ------------------------------ Route ------------------------------ */
 
 export function estimateRoute(from: LatLng, to: LatLng): Route {
@@ -123,7 +171,14 @@ export async function searchPlaces(query: string, near?: LatLng): Promise<Place[
         // Prefer results around the user (about 50 km box)
         params.set('viewbox', `${near.lng - 0.5},${near.lat + 0.5},${near.lng + 0.5},${near.lat - 0.5}`);
       }
-      const data = await getJson<NRes>(`${env.maps.nominatimUrl}/search?${params}`);
+      let data: NRes;
+      try {
+        await nominatimTurn();
+        data = await getJson<NRes>(`${env.maps.nominatimUrl}/search?${params}`);
+      } catch (err) {
+        logger.warn({ err: (err as Error).message }, 'Nominatim search failed, using Photon');
+        return await photonSearch(q, near);
+      }
       return data.map((p) => ({
         name: p.name || p.display_name.split(',')[0]!,
         address: p.display_name,
@@ -155,9 +210,14 @@ export async function reverseGeocode(p: LatLng): Promise<Place> {
         return { name: route ?? r.formatted_address.split(',')[0]!, address: r.formatted_address, ...p };
       }
       type NRes = { display_name?: string; name?: string; address?: Record<string, string> };
-      const data = await getJson<NRes>(
-        `${env.maps.nominatimUrl}/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lng}&zoom=18&accept-language=en`,
-      );
+      let data: NRes;
+      try {
+        await nominatimTurn();
+        data = await getJson<NRes>(`${env.maps.nominatimUrl}/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lng}&zoom=18&accept-language=en`);
+      } catch (err) {
+        logger.warn({ err: (err as Error).message }, 'Nominatim reverse failed, using Photon');
+        return (await photonReverse(p)) ?? fallback;
+      }
       if (!data.display_name) return fallback;
       const a = data.address ?? {};
       const name = data.name || a.road || a.neighbourhood || a.suburb || data.display_name.split(',')[0]!;

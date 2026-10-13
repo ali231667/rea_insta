@@ -59,8 +59,20 @@ Errors look like: `{ "error": { "code": "fare_too_low", "message": "Minimum fare
 | POST | `/drivers/me/topup` | `{ amount, method: jazzcash\|easypaisa\|card }` (demo) |
 | GET | `/drivers/nearby?lat=&lng=` | Cars for the passenger map (ids hidden) |
 
+## Support and sharing
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/support/tickets` | My requests (with admin replies) |
+| POST | `/support/tickets` | `{ category, message, rideId? }` – category: lost_item, driver_behaviour, passenger_behaviour, fare_issue, safety, app_problem, account, other |
+| POST | `/support/tickets/:id/close` | |
+| GET | `/rides/:id/share-link` | Link to the live trip web page `/t/<id>/<signature>` |
+| GET | `/share/:id/:signature` | Public trip data for that page (no login) |
+| GET | `/config` | Currency, vehicles, app version rules, maintenance, legal links |
+
+Public pages: `/legal/terms`, `/legal/privacy`, `/t/<rideId>/<signature>` (live trip), `/admin`.
+
 ## Admin (header `x-admin-key`)
-`GET /admin/stats`, `GET /admin/drivers?status=pending`, `POST /admin/drivers/:id/approve|reject|block`, `GET /admin/rides`, `GET /admin/sos`, `POST /admin/sos/:id/resolve`.
+`GET /admin/stats`, `GET /admin/drivers?status=pending`, `POST /admin/drivers/:id/approve|reject|block`, `GET /admin/users?q=`, `POST /admin/users/:id/block|unblock`, `GET /admin/tickets?status=`, `POST /admin/tickets/:id/reply`, `GET /admin/rides`, `GET /admin/sos`, `POST /admin/sos/:id/resolve`.
 Web page: `http://localhost:4000/admin`.
 
 ## Socket.IO events

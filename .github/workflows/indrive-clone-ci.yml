@@ -1,0 +1,58 @@
+name: inDrive clone CI
+
+on:
+  push:
+    paths: ['indrive_clone/**', '.github/workflows/indrive-clone-ci.yml']
+  pull_request:
+    paths: ['indrive_clone/**', '.github/workflows/indrive-clone-ci.yml']
+
+jobs:
+  backend:
+    name: Backend (typecheck + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: indrive_clone/backend
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: indrive_clone/backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/indrive_test
+          TEST_REDIS_URL: redis://localhost:6379/1
+
+  mobile:
+    name: Flutter (analyze + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: indrive_clone/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

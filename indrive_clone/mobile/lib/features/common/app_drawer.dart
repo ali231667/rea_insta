@@ -68,7 +68,7 @@ class AppDrawer extends ConsumerWidget {
           if (isDriver) ...[
             ListTile(leading: const Icon(Icons.local_taxi), title: Text(tr('Ride requests')), onTap: () => Navigator.pop(context)),
             ListTile(leading: const Icon(Icons.account_balance_wallet_outlined), title: Text(tr('Earnings')), onTap: () => go('/driver/earnings')),
-            ListTile(leading: const Icon(Icons.tune), title: const Text('My services'), onTap: () => go('/driver/services')),
+            ListTile(leading: const Icon(Icons.tune), title: Text(tr('My services')), onTap: () => go('/driver/services')),
           ] else
             ListTile(leading: const Icon(Icons.directions_car), title: Text(tr('City')), onTap: () => Navigator.pop(context)),
           ListTile(leading: const Icon(Icons.history), title: Text(tr('My rides')), onTap: () => go('/history')),

@@ -91,7 +91,7 @@ class _RateScreenState extends ConsumerState<RateScreen> {
           const SizedBox(height: 12),
           TextField(controller: _review, maxLines: 3, decoration: const InputDecoration(hintText: 'Write a comment (optional)')),
           const SizedBox(height: 20),
-          LoadingButton(label: 'Submit', onPressed: _submit),
+          LoadingButton(label: tr('Submit'), onPressed: _submit),
         ]),
       ),
     );

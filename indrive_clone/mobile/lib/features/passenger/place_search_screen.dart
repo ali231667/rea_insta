@@ -84,7 +84,7 @@ class _PlaceSearchScreenState extends ConsumerState<PlaceSearchScreen> {
             autofocus: true,
             onChanged: _onChanged,
             decoration: InputDecoration(
-              hintText: 'Search street, market, place...',
+              hintText: tr('Search street, market, place...'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _loading
                   ? const Padding(padding: EdgeInsets.all(14), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))

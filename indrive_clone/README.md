@@ -95,6 +95,11 @@ cd mobile && flutter test     # models read real server JSON, map helpers, "walk
 cd mobile && flutter analyze  # no issues
 ```
 
+## Release and quality
+- **[docs/QA_REPORT.md](docs/QA_REPORT.md)** – what we tested as passenger + driver, bugs found and fixed
+- **[docs/RELEASE.md](docs/RELEASE.md)** – put the backend online, sign and publish the Android / iOS app
+- CI: `.github/workflows/indrive-clone-ci.yml` runs backend tests and Flutter checks on every push
+
 ## More docs
 - [docs/HOW_INDRIVE_WORKS.md](docs/HOW_INDRIVE_WORKS.md) – analysis of InDrive + feature list
 - [docs/API.md](docs/API.md) – all REST endpoints and Socket.IO events

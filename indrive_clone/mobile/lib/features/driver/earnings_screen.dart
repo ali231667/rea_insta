@@ -47,7 +47,7 @@ class EarningsScreen extends ConsumerWidget {
             DefaultTabController(
               length: 3,
               child: Column(children: [
-                const TabBar(tabs: [Tab(text: 'Today'), Tab(text: 'This week'), Tab(text: 'This month')]),
+                TabBar(tabs: [Tab(text: tr('Today')), Tab(text: tr('This week')), Tab(text: tr('This month'))]),
                 SizedBox(
                   height: 170,
                   child: TabBarView(children: [_Period(e.today), _Period(e.week), _Period(e.month)]),
@@ -55,7 +55,7 @@ class EarningsScreen extends ConsumerWidget {
               ]),
             ),
             const SizedBox(height: 8),
-            const Text('Wallet history', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(tr('Wallet history'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             for (final t in e.transactions)
               ListTile(
                 contentPadding: EdgeInsets.zero,

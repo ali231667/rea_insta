@@ -116,7 +116,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.dark_mode_outlined),
-          title: const Text('Theme'),
+          title: Text(tr('Theme')),
           trailing: DropdownButton<ThemeMode>(
             value: s.themeMode,
             underline: const SizedBox(),
@@ -140,7 +140,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.delete_forever, color: AppColors.red),
-          title: const Text('Delete account', style: TextStyle(color: AppColors.red)),
+          title: Text(tr('Delete account'), style: const TextStyle(color: AppColors.red)),
           onTap: () async {
             final ok = await showDialog<bool>(
               context: context,
@@ -380,7 +380,7 @@ class _DriverServicesScreenState extends ConsumerState<DriverServicesScreen> {
     final d = ref.watch(sessionProvider).driver;
     final allowed = services.where((s) => s.vehicleTypes.contains(d?.vehicle.type)).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('My services')),
+      appBar: AppBar(title: Text(tr('My services'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         const Text('Choose which orders you want to receive.', style: TextStyle(color: AppColors.grey)),
         for (final s in allowed)

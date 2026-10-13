@@ -140,7 +140,7 @@ class _Feed extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: !s.online
                 ? Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    const Text('You are offline', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    Text(tr('You are offline'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     const Text('Go online to see ride requests near you.', style: TextStyle(color: AppColors.grey)),
                     if (balance < 0) ...[
