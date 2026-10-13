@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sets up REA (rea-agents) for Claude Code cloud sessions:
-#   - Ghidra 12.1.x (optional, skipped if github.com is blocked)
-#   - Hopper demo (optional, skipped if www.hopperapp.com is blocked)
+#   - Ghidra 12.1.x (optional, skipped if GitHub release access is blocked)
+#   - Hopper 6.4.2 demo (optional, skipped if the download fails)
 #   - REA MCP server registration + REA skill for Claude Code
 set -euo pipefail
 
@@ -14,10 +14,6 @@ GHIDRA_TAG="Ghidra_12.1.4_build"
 GHIDRA_ROOT="/opt/ghidra"
 
 log() { echo "[rea-setup] $*" >&2; }
-
-can_reach() {
-  curl -sS -o /dev/null --max-time 15 -r 0-0 "$1" 2>/dev/null
-}
 
 install_ghidra() {
   local existing
@@ -64,18 +60,43 @@ if install_ghidra; then
   fi
 fi
 
-SETUP=(npx -y "rea-agents@$REA_VERSION" setup --yes --client claude_code)
+# Hopper demo for Linux. REA's built-in downloader gets HTTP 403 from
+# hopperapp.com, so fetch the same package with a browser user agent and
+# check it against the size and SHA-1 that rea-agents expects.
+HOPPER_URL="https://www.hopperapp.com/downloader/public/Hopper-6.4.2-Linux-demo.deb"
+HOPPER_SIZE="35755772"
+HOPPER_SHA1="e4f79dff602648a8ff4a88b773875b6bfac0dc65"
 
-if command -v Hopper >/dev/null 2>&1 || [ -n "${HOPPER_LAUNCHER_PATH:-}" ]; then
-  "${SETUP[@]}" >/dev/null
-elif can_reach "https://www.hopperapp.com/"; then
-  if ! "${SETUP[@]}" --install-hopper >/dev/null; then
-    log "Hopper install failed; configuring REA without it."
-    "${SETUP[@]}" >/dev/null
+install_hopper() {
+  if [ -x /opt/hopper/bin/Hopper ]; then
+    return 0
   fi
-else
-  log "Hopper skipped: cannot reach www.hopperapp.com (check network policy)."
-  "${SETUP[@]}" >/dev/null
-fi
+  local tmp
+  tmp=$(mktemp -d)
+  if ! curl -fsSL --max-time 600 -A "Mozilla/5.0 (X11; Linux x86_64)" -o "$tmp/hopper.deb" "$HOPPER_URL"; then
+    log "Hopper skipped: download failed ($HOPPER_URL)."
+    rm -rf "$tmp"
+    return 1
+  fi
+  if [ "$(stat -c %s "$tmp/hopper.deb")" != "$HOPPER_SIZE" ] ||
+    ! echo "$HOPPER_SHA1  $tmp/hopper.deb" | sha1sum -c --quiet -; then
+    log "Hopper skipped: package size or SHA-1 mismatch."
+    rm -rf "$tmp"
+    return 1
+  fi
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -qq >/dev/null 2>&1 || true
+  if ! apt-get install -y -qq "$tmp/hopper.deb" xvfb xauth python3 libx11-6 libxtst6 >/dev/null 2>&1; then
+    log "Hopper skipped: apt-get install failed."
+    rm -rf "$tmp"
+    return 1
+  fi
+  rm -rf "$tmp"
+  log "Hopper installed at /opt/hopper/bin/Hopper"
+}
+
+install_hopper || true
+
+npx -y "rea-agents@$REA_VERSION" setup --yes --client claude_code >/dev/null
 
 log "REA setup done."
