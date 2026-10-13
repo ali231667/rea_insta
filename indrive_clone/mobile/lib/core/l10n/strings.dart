@@ -1,0 +1,88 @@
+/// Very small translation system: English text is the key, Urdu is looked up in a map.
+/// If a sentence has no Urdu yet, English is shown. Add more lines to [_ur] to translate more.
+class L10n {
+  static String language = 'en';
+}
+
+String tr(String en) => L10n.language == 'ur' ? (_ur[en] ?? en) : en;
+
+const _ur = <String, String>{
+  // Common
+  'Continue': 'جاری رکھیں',
+  'Cancel': 'منسوخ کریں',
+  'Save': 'محفوظ کریں',
+  'Done': 'مکمل',
+  'Retry': 'دوبارہ کوشش کریں',
+  'Close': 'بند کریں',
+  'Yes': 'ہاں',
+  'No': 'نہیں',
+  'Call': 'کال',
+  'Chat': 'چیٹ',
+  'Share': 'شیئر',
+  'Safety': 'حفاظت',
+  'Settings': 'ترتیبات',
+  'Profile': 'پروفائل',
+  'Help': 'مدد',
+  'Logout': 'لاگ آؤٹ',
+  'Language': 'زبان',
+
+  // Onboarding / auth
+  'Choose your language': 'اپنی زبان منتخب کریں',
+  'Set your own fair price': 'اپنی مناسب قیمت خود طے کریں',
+  'Offer your price, choose your driver. Rides, couriers, city to city and freight.':
+      'اپنی قیمت لگائیں، اپنا ڈرائیور چنیں۔ سواری، کوریئر، شہر سے شہر اور سامان۔',
+  'Enter your phone number': 'اپنا فون نمبر درج کریں',
+  'We will send you a code by SMS': 'ہم آپ کو SMS کے ذریعے کوڈ بھیجیں گے',
+  'Enter the code': 'کوڈ درج کریں',
+  'Resend code': 'کوڈ دوبارہ بھیجیں',
+  'What is your name?': 'آپ کا نام کیا ہے؟',
+  'Your name': 'آپ کا نام',
+  'Email (optional)': 'ای میل (اختیاری)',
+
+  // Passenger
+  'Where to?': 'کہاں جانا ہے؟',
+  'From': 'کہاں سے',
+  'To': 'کہاں تک',
+  'Find a driver': 'ڈرائیور تلاش کریں',
+  'Offer your fare': 'اپنا کرایہ پیش کریں',
+  'Recommended fare': 'تجویز کردہ کرایہ',
+  'Minimum fare': 'کم از کم کرایہ',
+  'Comments and wishes': 'تبصرے اور خواہشات',
+  'Cash': 'نقد',
+  'City': 'شہر',
+  'City to City': 'شہر سے شہر',
+  'Courier': 'کوریئر',
+  'Freight': 'سامان',
+  'Looking for drivers': 'ڈرائیور تلاش کیے جا رہے ہیں',
+  'Raise fare': 'کرایہ بڑھائیں',
+  'Accept': 'قبول کریں',
+  'Decline': 'مسترد کریں',
+  'Cancel request': 'درخواست منسوخ کریں',
+  'Driver is on the way': 'ڈرائیور راستے میں ہے',
+  'Driver has arrived': 'ڈرائیور پہنچ گیا ہے',
+  'On the way to destination': 'منزل کی طرف روانہ',
+  'Rate your trip': 'اپنے سفر کی درجہ بندی کریں',
+  'Choose on map': 'نقشے پر منتخب کریں',
+  'Recent': 'حالیہ',
+  'Home': 'گھر',
+  'Work': 'دفتر',
+  'My rides': 'میری سواریاں',
+  'Driver mode': 'ڈرائیور موڈ',
+  'Passenger mode': 'مسافر موڈ',
+
+  // Driver
+  'Online': 'آن لائن',
+  'Offline': 'آف لائن',
+  'Go online': 'آن لائن ہوں',
+  'Go offline': 'آف لائن ہوں',
+  'Ride requests': 'سواری کی درخواستیں',
+  'Offer': 'پیشکش',
+  'Accept for': 'قبول کریں',
+  'I have arrived': 'میں پہنچ گیا ہوں',
+  'Start trip': 'سفر شروع کریں',
+  'Finish trip': 'سفر ختم کریں',
+  'Earnings': 'کمائی',
+  'Balance': 'بیلنس',
+  'Top up': 'رقم شامل کریں',
+  'Become a driver': 'ڈرائیور بنیں',
+};
