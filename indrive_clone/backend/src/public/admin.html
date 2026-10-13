@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>InDrive Clone Admin</title>
+<style>
+  :root { --green: #c1f11d; --dark: #1b1b1b; --muted: #666; --bg: #f5f5f5; --card: #fff; --line: #e3e3e3; --red: #d93025; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--dark); }
+  header { background: var(--dark); color: #fff; padding: 14px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header b { color: var(--green); font-size: 18px; }
+  header input { padding: 8px; border-radius: 8px; border: 0; width: 180px; }
+  nav { display: flex; gap: 6px; padding: 12px 20px; flex-wrap: wrap; }
+  nav button, .btn { border: 1px solid var(--line); background: var(--card); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: 600; }
+  nav button.on { background: var(--green); border-color: var(--green); }
+  main { padding: 0 20px 40px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .stat { background: var(--card); border-radius: 14px; padding: 16px; }
+  .stat .n { font-size: 28px; font-weight: 800; }
+  .stat .l { color: var(--muted); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; font-size: 14px; }
+  th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { background: #fafafa; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+  .wrap { overflow-x: auto; }
+  .pill { padding: 2px 8px; border-radius: 10px; font-size: 12px; background: #eee; }
+  .approved, .completed { background: #dff5d8; } .pending, .searching { background: #fff3c4; } .rejected, .blocked, .cancelled, .expired { background: #fde0de; }
+  .btn.ok { background: var(--green); border-color: var(--green); } .btn.no { color: var(--red); }
+  .docs a { margin-right: 6px; font-size: 12px; }
+  .err { color: var(--red); padding: 10px 0; }
+</style>
+</head>
+<body>
+<header>
+  <b>inDrive clone</b><span>Admin panel</span>
+  <span style="flex:1"></span>
+  <input id="key" type="password" placeholder="Admin key (ADMIN_KEY)" />
+  <button class="btn" onclick="saveKey()">Save</button>
+</header>
+<nav id="tabs"></nav>
+<main><div id="err" class="err"></div><div id="view"></div></main>
+<script>
+const tabs = { stats: 'Dashboard', pending: 'Pending drivers', drivers: 'All drivers', users: 'Users', rides: 'Rides', tickets: 'Support', sos: 'SOS alerts' };
+let current = 'stats';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+let key = '';
+try { key = localStorage.getItem('adminKey') || ''; } catch {}
+$('key').value = key;
+function saveKey() { key = $('key').value; try { localStorage.setItem('adminKey', key); } catch {} load(); }
+
+async function call(path, method = 'GET', body) {
+  const r = await fetch('/api/v1/admin' + path, { method, headers: { 'x-admin-key': key, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error?.message || r.statusText);
+  return j;
+}
+
+function renderTabs() {
+  $('tabs').innerHTML = Object.entries(tabs).map(([k, v]) => `<button class="${k === current ? 'on' : ''}" onclick="current='${k}';load()">${v}</button>`).join('');
+}
+
+async function load() {
+  renderTabs();
+  $('err').textContent = '';
+  try {
+    if (current === 'stats') {
+      const s = await call('/stats');
+      const labels = { users: 'Users', drivers: 'Approved drivers', pending_drivers: 'Pending drivers', online_drivers: 'Online now', active_rides: 'Active rides', completed_rides: 'Completed rides', total_commission: 'Commission (PKR)', open_sos: 'Open SOS', open_tickets: 'Open support tickets' };
+      $('view').innerHTML = `<div class="stats">${Object.entries(labels).map(([k, l]) => `<div class="stat"><div class="n">${s[k] ?? 0}</div><div class="l">${l}</div></div>`).join('')}</div>`;
+    } else if (current === 'pending' || current === 'drivers') {
+      const list = await call('/drivers' + (current === 'pending' ? '?status=pending' : ''));
+      $('view').innerHTML = `<div class="wrap"><table><tr><th>Name / phone</th><th>Status</th><th>CNIC / License</th><th>Vehicle</th><th>Docs</th><th>Balance</th><th></th></tr>${list.map((d) => `
+        <tr><td>${esc(d.name)}<br><small>${esc(d.phone)}</small></td>
+        <td><span class="pill ${d.status}">${d.status}</span>${d.isOnline ? ' 🟢' : ''}</td>
+        <td>${esc(d.cnicNumber)}<br><small>${esc(d.licenseNumber)}</small></td>
+        <td>${esc(d.vehicle)}<br><small>${esc(d.services.join(', '))}</small></td>
+        <td class="docs">${Object.entries(d.docs || {}).map(([k, u]) => `<a href="${esc(u)}" target="_blank">${k}</a>`).join('') || '-'}</td>
+        <td>${d.balance}</td>
+        <td>${d.status !== 'approved' ? `<button class="btn ok" onclick="act('${d.id}','approve')">Approve</button>` : ''}
+            ${d.status === 'pending' ? `<button class="btn no" onclick="act('${d.id}','reject')">Reject</button>` : ''}
+            ${d.status === 'approved' ? `<button class="btn no" onclick="act('${d.id}','block')">Block</button>` : ''}</td></tr>`).join('')}</table></div>` + (list.length ? '' : '<p>No drivers.</p>');
+    } else if (current === 'rides') {
+      const list = await call('/rides');
+      $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>Status</th><th>Service</th><th>From</th><th>To</th><th>Price</th></tr>${list.map((r) => `
+        <tr><td>${new Date(r.createdAt).toLocaleString()}</td><td><span class="pill ${r.status}">${r.status}</span></td><td>${r.serviceType} / ${r.vehicleType}</td>
+        <td>${esc(r.from)}</td><td>${esc(r.to)}</td><td>PKR ${r.finalFare ?? r.offeredFare}</td></tr>`).join('')}</table></div>`;
+    } else if (current === 'users') {
+      const q = window.__q || '';
+      const list = await call('/users' + (q ? '?q=' + encodeURIComponent(q) : ''));
+      $('view').innerHTML = `<p><input id="q" placeholder="Search name or phone" value="${esc(q)}" style="padding:8px;border-radius:8px;border:1px solid #ddd;width:240px"> <button class="btn" onclick="window.__q=$('q').value;load()">Search</button></p>
+        <div class="wrap"><table><tr><th>Name</th><th>Phone</th><th>Rating</th><th>Joined</th><th></th></tr>${list.map((u) => `
+        <tr><td>${esc(u.name)}</td><td>${esc(u.phone)}</td><td>${Number(u.rating).toFixed(2)} (${u.ratingCount})</td><td>${new Date(u.createdAt).toLocaleDateString()}</td>
+        <td>${u.isBlocked ? `<button class="btn ok" onclick="userAct('${u.id}','unblock')">Unblock</button>` : `<button class="btn no" onclick="userAct('${u.id}','block')">Block</button>`}</td></tr>`).join('')}</table></div>`;
+    } else if (current === 'tickets') {
+      const list = await call('/tickets');
+      $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>User</th><th>Category</th><th>Message</th><th>Status</th><th>Reply</th></tr>${list.map((t) => `
+        <tr><td>${new Date(t.createdAt).toLocaleString()}</td><td>${esc(t.userName)}<br><small>${esc(t.userPhone)}</small></td>
+        <td>${esc(t.category.replace('_', ' '))}${t.rideId ? '<br><small>ride ' + esc(t.rideId.slice(0, 8)) + '</small>' : ''}</td>
+        <td style="max-width:320px">${esc(t.message)}${t.adminReply ? `<br><small><b>Reply:</b> ${esc(t.adminReply)}</small>` : ''}</td>
+        <td><span class="pill ${t.status === 'open' ? 'pending' : 'approved'}">${t.status}</span></td>
+        <td>${t.status === 'closed' ? '' : `<button class="btn ok" onclick="reply('${t.id}')">Reply</button>`}</td></tr>`).join('')}</table></div>` + (list.length ? '' : '<p>No tickets.</p>');
+    } else if (current === 'sos') {
+      const list = await call('/sos');
+      $('view').innerHTML = `<div class="wrap"><table><tr><th>Time</th><th>Ride</th><th>User</th><th>Location</th><th></th></tr>${list.map((s) => `
+        <tr><td>${new Date(s.createdAt).toLocaleString()}</td><td>${esc(s.rideId)}</td><td>${esc(s.userId)}</td>
+        <td>${s.location ? `<a target="_blank" href="https://www.google.com/maps?q=${s.location.y},${s.location.x}">Open map</a>` : '-'}</td>
+        <td>${s.resolved ? 'Resolved' : `<button class="btn ok" onclick="resolveSos('${s.id}')">Mark resolved</button>`}</td></tr>`).join('')}</table></div>` + (list.length ? '' : '<p>No SOS alerts. 👍</p>');
+    }
+  } catch (e) { $('err').textContent = e.message; $('view').innerHTML = ''; }
+}
+async function act(id, action) {
+  const reason = action === 'approve' ? undefined : prompt('Reason (shown to driver):') || undefined;
+  try { await call(`/drivers/${id}/${action}`, 'POST', { reason }); load(); } catch (e) { $('err').textContent = e.message; }
+}
+async function resolveSos(id) { await call(`/sos/${id}/resolve`, 'POST', {}); load(); }
+async function userAct(id, action) { if (!confirm(action + ' this user?')) return; try { await call(`/users/${id}/${action}`, 'POST', {}); load(); } catch (e) { $('err').textContent = e.message; } }
+async function reply(id) {
+  const text = prompt('Reply to the user:'); if (!text) return;
+  const close = confirm('Close the ticket after replying?');
+  try { await call(`/tickets/${id}/reply`, 'POST', { reply: text, close }); load(); } catch (e) { $('err').textContent = e.message; }
+}
+load();
+setInterval(() => current === 'stats' && load(), 10000);
+</script>
+</body>
+</html>
