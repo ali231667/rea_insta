@@ -1,6 +1,6 @@
 #!/bin/bash
 # Sets up REA (rea-agents) for Claude Code cloud sessions:
-#   - Ghidra 12.1.x (optional, skipped if GitHub release access is blocked)
+#   - Ghidra 12.1.4 (official release, else this repo's release mirror)
 #   - Hopper 6.4.2 demo (optional, skipped if the download fails)
 #   - REA MCP server registration + REA skill for Claude Code
 set -euo pipefail
@@ -12,45 +12,76 @@ fi
 REA_VERSION="6.4.0"
 GHIDRA_TAG="Ghidra_12.1.4_build"
 GHIDRA_ROOT="/opt/ghidra"
+# Fixed path; .mcp.json points REA at it.
+GHIDRA_INSTALL_DIR="$GHIDRA_ROOT/ghidra_12.1.4"
+
+# Fallback when the official release is not reachable: cloud sessions only get
+# GitHub access to this repository, so a Ghidra 12.1.4 build (from the
+# official source tag, without the optional Z3 extension) is kept as a
+# release asset here. It is pinned by SHA-256.
+MIRROR_REPO="ali231667/rea_insta"
+MIRROR_TAG="ghidra-12.1.4"
+MIRROR_SHA256="@MIRROR_SHA256@"
 
 log() { echo "[rea-setup] $*" >&2; }
 
-install_ghidra() {
-  local existing
-  existing=$(find "$GHIDRA_ROOT" -maxdepth 1 -type d -name 'ghidra_12.1*' 2>/dev/null | sort -V | tail -1)
-  if [ -n "$existing" ]; then
-    GHIDRA_INSTALL_DIR="$existing"
-    return 0
-  fi
-
-  local meta url digest tmp
-  if ! meta=$(curl -fsS --max-time 30 "https://api.github.com/repos/NationalSecurityAgency/ghidra/releases/tags/$GHIDRA_TAG" 2>/dev/null); then
-    log "Ghidra skipped: cannot reach api.github.com (check network policy)."
-    return 1
-  fi
-  read -r url digest < <(python3 -c '
+# Prints "<download url> <sha256 or ->" for the first .zip asset of a release.
+release_zip_asset() {
+  local meta
+  meta=$(curl -fsS --max-time 30 "https://api.github.com/repos/$1/releases/tags/$2" 2>/dev/null) || return 1
+  python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 a = next(a for a in d["assets"] if a["name"].endswith(".zip"))
-print(a["browser_download_url"], (a.get("digest") or "").removeprefix("sha256:") or "-")
-' <<< "$meta") || { log "Ghidra skipped: no zip asset in $GHIDRA_TAG."; return 1; }
+print(a["url"], (a.get("digest") or "").removeprefix("sha256:") or "-")
+' <<< "$meta"
+}
 
+# Downloads a release asset by API url, checks SHA-256, unpacks it into
+# $GHIDRA_INSTALL_DIR.
+fetch_ghidra_zip() {
+  local url=$1 digest=$2 tmp dir
   tmp=$(mktemp -d)
-  if ! curl -fsSL --max-time 900 -o "$tmp/ghidra.zip" "$url"; then
-    log "Ghidra skipped: download failed ($url)."
+  if ! curl -fsSL --max-time 900 -H "Accept: application/octet-stream" -o "$tmp/ghidra.zip" "$url"; then
+    log "Ghidra download failed ($url)."
     rm -rf "$tmp"
     return 1
   fi
   if [ "$digest" != "-" ] && ! echo "$digest  $tmp/ghidra.zip" | sha256sum -c --quiet -; then
-    log "Ghidra skipped: SHA-256 mismatch."
+    log "Ghidra SHA-256 mismatch ($url)."
+    rm -rf "$tmp"
+    return 1
+  fi
+  mkdir -p "$tmp/x"
+  unzip -q "$tmp/ghidra.zip" -d "$tmp/x"
+  dir=$(find "$tmp/x" -mindepth 1 -maxdepth 1 -type d -name 'ghidra_12.1*' | head -1)
+  if [ -z "$dir" ] || [ ! -x "$dir/support/analyzeHeadless" ]; then
+    log "Ghidra zip has no ghidra_12.1* install ($url)."
     rm -rf "$tmp"
     return 1
   fi
   mkdir -p "$GHIDRA_ROOT"
-  unzip -q "$tmp/ghidra.zip" -d "$GHIDRA_ROOT"
+  mv "$dir" "$GHIDRA_INSTALL_DIR"
   rm -rf "$tmp"
-  GHIDRA_INSTALL_DIR=$(find "$GHIDRA_ROOT" -maxdepth 1 -type d -name 'ghidra_12.1*' | sort -V | tail -1)
-  log "Ghidra installed at $GHIDRA_INSTALL_DIR"
+}
+
+install_ghidra() {
+  if [ -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" ]; then
+    return 0
+  fi
+  local url digest
+  if read -r url digest < <(release_zip_asset NationalSecurityAgency/ghidra "$GHIDRA_TAG") &&
+    fetch_ghidra_zip "$url" "$digest"; then
+    log "Ghidra installed at $GHIDRA_INSTALL_DIR (official release)"
+    return 0
+  fi
+  if read -r url digest < <(release_zip_asset "$MIRROR_REPO" "$MIRROR_TAG") &&
+    fetch_ghidra_zip "$url" "$MIRROR_SHA256"; then
+    log "Ghidra installed at $GHIDRA_INSTALL_DIR (from $MIRROR_REPO release $MIRROR_TAG)"
+    return 0
+  fi
+  log "Ghidra skipped: no reachable release (check network policy / GitHub access)."
+  return 1
 }
 
 if install_ghidra; then
