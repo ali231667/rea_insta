@@ -19,6 +19,7 @@ import {
 import { scheduleJob } from '../../jobs/queue.js';
 import { badRequest, conflict, forbidden, notFound } from '../../lib/errors.js';
 import { distanceM, estimateEtaSec, fromXY, toXY, type LatLng } from '../../lib/geo.js';
+import { sendPush } from '../../lib/push.js';
 import { redis } from '../../lib/redis.js';
 import { emitToUser, emitToUsers } from '../../realtime/emitter.js';
 import { Ev } from '../../realtime/events.js';
@@ -187,6 +188,7 @@ export async function acceptOffer(passengerId: string, rideId: string, offerId: 
   }
 
   await closeRequestForDrivers(rideId, 'taken', accepted.driverId!);
+  sendPush(accepted.driverId!, { title: 'The passenger chose you! 🎉', body: `Go to ${accepted.pickupAddress}`, route: '/driver/ride' });
   return broadcastRide(accepted);
 }
 
@@ -246,6 +248,11 @@ export async function makeOffer(driverId: string, rideId: string, price: number)
   const driverInfo = (await loadPublicDrivers([driverId])).get(driverId);
   const dto = offerDto(offer, driverInfo);
   emitToUser(ride.passengerId, Ev.offerNew, dto);
+  sendPush(ride.passengerId, {
+    title: `New offer: PKR ${price}`,
+    body: `${driverInfo?.name ?? 'A driver'} · ${driverInfo?.vehicle.make ?? ''} ${driverInfo?.vehicle.model ?? ''} · ${Math.ceil(eta / 60)} min away`,
+    route: '/ride',
+  });
   return dto;
 }
 
@@ -260,6 +267,7 @@ export async function driverArrived(driverId: string, rideId: string) {
   const ride = await assertDriverOfRide(driverId, rideId);
   if (ride.status !== 'accepted') throw conflict(`Cannot mark arrived when ride is ${ride.status}`);
   const [r] = (await db.update(rides).set({ status: 'arrived', arrivedAt: new Date() }).where(eq(rides.id, rideId)).returning()) as [Ride];
+  sendPush(r.passengerId, { title: 'Your driver has arrived 🚗', body: 'Please go to the pickup point.', route: '/ride' });
   return broadcastRide(r);
 }
 
@@ -296,6 +304,7 @@ export async function completeRide(driverId: string, rideId: string) {
   const [d] = await db.select({ balance: drivers.balance }).from(drivers).where(eq(drivers.userId, driverId));
   emitToUser(driverId, Ev.balanceUpdated, { balance: d?.balance ?? 0 });
   await freeDriver(driverId);
+  sendPush(r.passengerId, { title: 'You have arrived', body: `Please pay PKR ${fare} in cash. Rate your driver.`, route: `/rate/${r.id}` });
   return broadcastRide(r);
 }
 
@@ -322,6 +331,14 @@ export async function cancelRide(userId: string, rideId: string, reason: string)
     await closeRequestForDrivers(rideId, 'cancelled');
   }
   await freeDriver(r.driverId);
+  const other = isPassenger ? r.driverId : r.passengerId;
+  if (other) {
+    sendPush(other, {
+      title: isPassenger ? 'The passenger cancelled the ride' : 'The driver cancelled the ride',
+      body: reason,
+      route: isPassenger ? '/driver' : '/ride',
+    });
+  }
   return broadcastRide(r);
 }
 
@@ -423,6 +440,8 @@ export async function sendMessage(userId: string, rideId: string, body: string) 
   if (!ride.driverId || !ASSIGNED_RIDE_STATUSES.includes(ride.status)) throw conflict('Chat is open only during a ride');
   const [msg] = await db.insert(messages).values({ rideId, senderId: userId, body }).returning();
   emitToUsers([ride.passengerId, ride.driverId], Ev.chatMessage, msg);
+  const to = userId === ride.passengerId ? ride.driverId : ride.passengerId;
+  sendPush(to, { title: 'New message', body: body.slice(0, 120), route: `/chat/${rideId}` });
   return msg;
 }
 

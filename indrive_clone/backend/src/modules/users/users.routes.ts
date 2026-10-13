@@ -47,7 +47,7 @@ usersRouter.patch('/me', async (req, res) => {
   );
   await db
     .update(users)
-    .set({ ...body, email: body.email === '' ? null : body.email, updatedAt: new Date() })
+    .set({ ...body, email: body.email === '' ? null : body.email, fcmToken: body.fcmToken === '' ? null : body.fcmToken, updatedAt: new Date() })
     .where(eq(users.id, userId(req)));
   res.json(await me(userId(req)));
 });

@@ -10,8 +10,8 @@ class UserRepository {
 
   Future<Me> me() async => Me.fromJson(await api.get<Map<String, dynamic>>('/users/me'));
 
-  Future<Me> update({String? name, String? email, String? language}) async {
-    final body = <String, dynamic>{'name': ?name, 'email': ?email, 'language': ?language};
+  Future<Me> update({String? name, String? email, String? language, String? fcmToken}) async {
+    final body = <String, dynamic>{'name': ?name, 'email': ?email, 'language': ?language, 'fcmToken': ?fcmToken};
     return Me.fromJson(await api.patch<Map<String, dynamic>>('/users/me', body));
   }
 

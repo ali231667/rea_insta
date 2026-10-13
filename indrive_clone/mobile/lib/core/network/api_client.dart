@@ -5,7 +5,7 @@ import '../storage/token_storage.dart';
 import 'api_exception.dart';
 
 /// HTTP client for our backend.
-/// - adds "Authorization: Bearer <token>" to every request
+/// - adds the "Authorization: Bearer TOKEN" header to every request
 /// - when the short access token expires, gets a new one with the refresh token and repeats the request
 class ApiClient {
   ApiClient(this.tokens, {required this.onSessionExpired}) {

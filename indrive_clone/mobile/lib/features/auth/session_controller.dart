@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/strings.dart';
 import '../../core/providers.dart';
+import '../../core/push/push_service.dart';
 import '../../models/user.dart';
 
 enum AuthStatus { loading, onboarding, loggedOut, needsProfile, loggedIn }
@@ -86,7 +89,27 @@ class SessionController extends Notifier<SessionState> {
     var mode = state.mode;
     if (mode == AppMode.driver && me.driver?.status != 'approved') mode = AppMode.passenger;
     state = state.copyWith(me: me, mode: mode, status: needsProfile ? AuthStatus.needsProfile : AuthStatus.loggedIn);
-    if (!needsProfile) ref.read(socketProvider).connect();
+    if (!needsProfile) {
+      ref.read(socketProvider).connect();
+      unawaited(_registerPush());
+    }
+  }
+
+  StreamSubscription<String>? _tokenSub;
+
+  /// Sends this phone's FCM token to the backend so it can send push notifications.
+  Future<void> _registerPush() async {
+    final push = PushService.instance;
+    final token = await push.getToken();
+    if (token == null) return;
+    try {
+      await ref.read(userRepositoryProvider).update(fcmToken: token);
+    } catch (_) {}
+    _tokenSub ??= push.onTokenRefresh.listen((t) async {
+      try {
+        await ref.read(userRepositoryProvider).update(fcmToken: t);
+      } catch (_) {}
+    });
   }
 
   Future<void> finishOnboarding(String language) async {
@@ -102,6 +125,7 @@ class SessionController extends Notifier<SessionState> {
     final me = await ref.read(userRepositoryProvider).update(name: name, email: email, language: state.language);
     state = state.copyWith(me: me, status: AuthStatus.loggedIn);
     ref.read(socketProvider).connect();
+    unawaited(_registerPush());
   }
 
   void updateMe(Me me) => state = state.copyWith(me: me);
@@ -139,6 +163,13 @@ class SessionController extends Notifier<SessionState> {
 
   Future<void> logout() async {
     ref.read(socketProvider).disconnect();
+    // Stop pushes to this phone for the old account.
+    try {
+      await ref.read(userRepositoryProvider).update(fcmToken: '');
+    } catch (_) {}
+    await PushService.instance.deleteToken();
+    await _tokenSub?.cancel();
+    _tokenSub = null;
     await ref.read(authRepositoryProvider).logout();
     await ref.read(prefsProvider).setMode('passenger');
     state = state.copyWith(status: AuthStatus.loggedOut, clearMe: true, mode: AppMode.passenger);

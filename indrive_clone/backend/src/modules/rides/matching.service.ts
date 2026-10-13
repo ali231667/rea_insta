@@ -5,6 +5,7 @@ import { ASSIGNED_RIDE_STATUSES, drivers, rideOffers, rides, users, type Ride, t
 import { scheduleJob, type JobData } from '../../jobs/queue.js';
 import { distanceM, estimateEtaSec, fromXY, type LatLng } from '../../lib/geo.js';
 import { logger } from '../../lib/logger.js';
+import { sendPush } from '../../lib/push.js';
 import { redis } from '../../lib/redis.js';
 import { emitToUser, emitToUsers } from '../../realtime/emitter.js';
 import { Ev } from '../../realtime/events.js';
@@ -88,6 +89,11 @@ export async function notifyNearbyDrivers(rideId: string): Promise<number> {
     const isNew = await redis.sadd(notifiedKey(ride.id), n.driverId);
     if (!isNew) continue;
     emitToUser(n.driverId, Ev.rideRequest, requestDto(ride, passenger, { lat: n.lat, lng: n.lng }));
+    sendPush(n.driverId, {
+      title: `New request: PKR ${ride.offeredFare}`,
+      body: `${(n.distanceM / 1000).toFixed(1)} km away · to ${ride.dropoffAddress}`,
+      route: '/driver',
+    });
     sent++;
   }
   await redis.expire(notifiedKey(ride.id), env.matching.intercityTtlSec + 600);

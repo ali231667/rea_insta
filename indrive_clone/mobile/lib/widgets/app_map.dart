@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/config/app_config.dart';
 
-/// Base map used on every screen (OpenStreetMap data, CARTO tiles).
+/// Base map used on every screen (OpenStreetMap tiles).
 class AppMap extends StatelessWidget {
   const AppMap({
     super.key,
@@ -44,13 +44,11 @@ class AppMap extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: dark
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : AppConfig.tileUrl,
-          subdomains: AppConfig.tileSubdomains,
-          retinaMode: RetinaMode.isHighDensity(context),
+          urlTemplate: AppConfig.tileUrl,
           userAgentPackageName: AppConfig.userAgent,
           maxZoom: 19,
+          // Dark mode: same tiles with inverted colors.
+          tileBuilder: dark ? darkModeTileBuilder : null,
         ),
         ...layers,
         RichAttributionWidget(
@@ -58,7 +56,6 @@ class AppMap extends StatelessWidget {
           attributions: [
             TextSourceAttribution('OpenStreetMap contributors',
                 onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright'))),
-            const TextSourceAttribution('CARTO'),
           ],
         ),
       ],

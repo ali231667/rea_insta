@@ -27,6 +27,9 @@ const schema = z.object({
   AUTO_APPROVE_DRIVERS: bool('true'),
   ADMIN_KEY: z.string().default('admin123'),
 
+  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+
   GOOGLE_MAPS_API_KEY: z.string().optional(),
   OSRM_URL: z.string().default('https://router.project-osrm.org'),
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
@@ -62,6 +65,10 @@ export const env = {
   },
   devOtp: e.DEV_OTP,
   twilio: { sid: e.TWILIO_ACCOUNT_SID, token: e.TWILIO_AUTH_TOKEN, from: e.TWILIO_FROM },
+  firebase: {
+    serviceAccountPath: e.FIREBASE_SERVICE_ACCOUNT || undefined,
+    serviceAccountJson: e.FIREBASE_SERVICE_ACCOUNT_JSON || undefined,
+  },
   autoApproveDrivers: e.AUTO_APPROVE_DRIVERS,
   adminKey: e.ADMIN_KEY,
   maps: {

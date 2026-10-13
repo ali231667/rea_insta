@@ -19,9 +19,9 @@ class AppConfig {
 
   static String get apiBase => '$apiUrl/api/v1';
 
-  /// Map tiles (free, based on OpenStreetMap). CARTO "Voyager" looks close to the InDrive map style.
-  static const tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-  static const tileSubdomains = ['a', 'b', 'c', 'd'];
+  /// Map tiles from OpenStreetMap (free, no key). Fair use only: for a real app use a paid
+  /// provider (Mapbox, MapTiler, Google) and put its URL here.
+  static const tileUrl = String.fromEnvironment('TILE_URL', defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
   static const userAgent = 'com.studentproject.indrive_clone';
 
   static const currency = 'PKR';

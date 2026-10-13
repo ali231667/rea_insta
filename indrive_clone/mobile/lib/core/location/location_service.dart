@@ -30,7 +30,10 @@ class LocationService {
 
   Future<Position> current() async {
     await ensurePermission();
-    final last = await Geolocator.getLastKnownPosition();
+    Position? last;
+    try {
+      last = await Geolocator.getLastKnownPosition(); // not available on web
+    } catch (_) {}
     try {
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)),

@@ -186,18 +186,22 @@ class SimDriver {
 
   async onRideUpdated(ride: any) {
     if (ride.driver?.id !== this.userId) return;
-    if (ride.status === 'accepted' && this.busyRideId !== ride.id) {
+    // Also continues a trip after the simulator restarts (status may be arrived / in_progress).
+    if (['accepted', 'arrived', 'in_progress'].includes(ride.status) && this.busyRideId !== ride.id) {
       this.busyRideId = ride.id;
-      this.log(`✅ ACCEPTED! Going to pickup: ${ride.pickup.address}`);
-      const route = await this.api('GET', `/maps/route?fromLat=${this.pos.lat}&fromLng=${this.pos.lng}&toLat=${ride.pickup.lat}&toLng=${ride.pickup.lng}`);
-      const ok = await this.drive(decodePolyline(route.polyline), ride.id);
-      if (!ok) return;
-      await this.api('POST', `/rides/${ride.id}/arrived`);
-      this.log('📍 Arrived at pickup. Waiting for passenger...');
-      await sleep(10_000);
-      if (this.busyRideId !== ride.id) return;
-      await this.api('POST', `/rides/${ride.id}/start`);
-      this.log(`🚗 Trip started to ${ride.dropoff.address}`);
+      if (ride.status === 'accepted') {
+        this.log(`✅ ACCEPTED! Going to pickup: ${ride.pickup.address}`);
+        const route = await this.api('GET', `/maps/route?fromLat=${this.pos.lat}&fromLng=${this.pos.lng}&toLat=${ride.pickup.lat}&toLng=${ride.pickup.lng}`);
+        if (!(await this.drive(decodePolyline(route.polyline), ride.id))) return;
+        await this.api('POST', `/rides/${ride.id}/arrived`);
+        this.log('📍 Arrived at pickup. Waiting for passenger...');
+      }
+      if (ride.status !== 'in_progress') {
+        await sleep(10_000);
+        if (this.busyRideId !== ride.id) return;
+        await this.api('POST', `/rides/${ride.id}/start`);
+        this.log(`🚗 Trip started to ${ride.dropoff.address}`);
+      }
       const path = ride.routePolyline ? decodePolyline(ride.routePolyline) : [ride.pickup, ride.dropoff];
       if (!(await this.drive(path, ride.id))) return;
       const done = await this.api('POST', `/rides/${ride.id}/complete`);
